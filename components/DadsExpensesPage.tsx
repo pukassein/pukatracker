@@ -84,7 +84,7 @@ const DadsExpensesPage: React.FC<DadsExpensesPageProps> = ({ transactions, setTr
                 <p className="text-zinc-400 text-sm font-medium mb-1">Total Amount Owed by Dad</p>
                 <p className={`text-3xl font-bold text-amber-400`}>
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalOwed)}
-                p>
+                </p>
             </div>
 
             <div className="bg-zinc-800/50 p-6 rounded-2xl shadow-lg">
@@ -104,4 +104,4 @@ const DadsExpensesPage: React.FC<DadsExpensesPageProps> = ({ transactions, setTr
     );
 };
 
-export default DadsExpensesPage;
+export default DadsExpensesPage;   
