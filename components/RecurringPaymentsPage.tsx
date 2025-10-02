@@ -13,7 +13,12 @@ interface RecurringPaymentsPageProps {
     onNotify: (notification: { message: string; type: 'success' | 'error' }) => void;
 }
 
-const ICONS: Record<string, React.ReactNode> = {
+// FIX: Changed ICONS type from Record<string, React.ReactNode> to a more specific
+// Record<'rent' | 'condominio' | 'wifi' | 'default', React.ReactElement>. This ensures
+// that the keys are strongly typed, fixing an issue where `setIcon` was receiving a generic 'string'.
+// It also types the values as React.ReactElement, which allows React.cloneElement to correctly
+// infer props and resolves an error about the 'className' property not existing.
+const ICONS: Record<'rent' | 'condominio' | 'wifi' | 'default', React.ReactElement> = {
     rent: <HomeIcon className="w-6 h-6" />,
     condominio: <BuildingIcon className="w-6 h-6" />,
     wifi: <WifiIcon className="w-6 h-6" />,
@@ -85,7 +90,7 @@ const AddNewPaymentForm: React.FC<{
                 <div className="grid grid-cols-4 gap-2 rounded-lg bg-zinc-700 p-1 md:col-span-2 lg:col-span-1">
                     {(Object.keys(ICONS) as Array<keyof typeof ICONS>).map(iconKey => (
                          <button type="button" key={iconKey} onClick={() => setIcon(iconKey)} className={`py-2 rounded-md flex justify-center items-center transition-colors ${icon === iconKey ? 'bg-zinc-900 text-emerald-400' : 'text-zinc-400 hover:bg-zinc-600'}`}>
-                           {React.cloneElement(ICONS[iconKey] as React.ReactElement, { className: 'w-5 h-5' })}
+                           {React.cloneElement(ICONS[iconKey], { className: 'w-5 h-5' })}
                         </button>
                     ))}
                 </div>

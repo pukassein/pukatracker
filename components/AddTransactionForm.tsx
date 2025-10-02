@@ -4,7 +4,10 @@ import { XIcon } from './icons';
 
 interface AddTransactionFormProps {
     onClose: () => void;
-    onAddTransaction: (transaction: Omit<Transaction, 'id'>, date: string) => void;
+    // FIX: The onAddTransaction prop was expecting a transaction object that included a date,
+    // but the date was being passed as a separate argument. The type is updated to
+    // Omit<Transaction, 'id' | 'date'> to reflect that the date is handled separately.
+    onAddTransaction: (transaction: Omit<Transaction, 'id' | 'date'>, date: string) => void;
     prefillCategory?: TransactionCategory;
 }
 

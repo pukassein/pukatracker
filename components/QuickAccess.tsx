@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TransactionCategory } from '../types';
 import { 
@@ -12,7 +13,8 @@ import {
     ShoppingIcon,
     BillsIcon,
     EntertainmentIcon,
-    HealthIcon
+    HealthIcon,
+    LaundryIcon
 } from './icons';
 
 interface QuickAccessProps {
@@ -26,6 +28,7 @@ const quickAddItems = [
     { label: 'Groceries', category: TransactionCategory.Food, description: "Groceries", icon: <ShoppingIcon /> },
     { label: 'Transport', category: TransactionCategory.Transport, description: "Transport", icon: <TransportIcon /> },
     { label: 'Bills', category: TransactionCategory.Bills, description: "Bills", icon: <BillsIcon /> },
+    { label: 'Laundry', category: TransactionCategory.Bills, description: "Laundry", icon: <LaundryIcon /> },
     { label: 'Entertainment', category: TransactionCategory.Entertainment, description: "Entertainment", icon: <EntertainmentIcon /> },
     { label: 'Health', category: TransactionCategory.Health, description: "Health", icon: <HealthIcon /> },
     { label: 'Travel', category: TransactionCategory.Travel, description: "Travel", icon: <TravelIcon /> },

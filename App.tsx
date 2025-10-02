@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import { Transaction, RecurringPayment, SmartPromptData, TransactionCategory, Database, Accounts } from './types';
@@ -10,11 +9,11 @@ import TransactionItem from './components/TransactionItem';
 import AddTransactionForm from './components/AddTransactionForm';
 import Calculator from './components/Calculator';
 import SmartPrompt from './components/SmartPrompt';
-import SubscriptionManager from './components/SubscriptionManager';
 import Navigation from './components/Navigation';
 import QuickAccess from './components/QuickAccess';
 import QuickAddForm from './components/QuickAddForm';
 import Notification from './components/Notification';
+import EditBalancesModal from './components/EditBalancesModal';
 
 // Pages
 import DadsExpensesPage from './components/DadsExpensesPage';
@@ -27,7 +26,7 @@ import BudgetPage from './components/BudgetPage';
 import { WalletIcon, DollarSignIcon, CreditCardIcon, RepeatIcon } from './components/icons';
 
 type Page = 'dashboard' | 'recurring' | 'dads-expenses' | 'transactions' | 'exchange' | 'budget';
-type Modal = 'add' | 'quick-add' | 'exchange' | null;
+type Modal = 'add' | 'quick-add' | 'exchange' | 'edit-balances' | null;
 type NotificationType = { message: string; type: 'success' | 'error' };
 
 const App: React.FC = () => {
@@ -39,6 +38,7 @@ const App: React.FC = () => {
     const [currentPage, setCurrentPage] = useState<Page>('dashboard');
     const [activeModal, setActiveModal] = useState<Modal>(null);
     const [isCalculatorOpen, setCalculatorOpen] = useState(false);
+    const [isDashboardExpanded, setDashboardExpanded] = useState(false);
     const [smartPrompt, setSmartPrompt] = useState<SmartPromptData | null>(null);
     const [quickAddData, setQuickAddData] = useState<{ category: TransactionCategory, description: string, owedBy?: string } | null>(null);
     const [notification, setNotification] = useState<NotificationType | null>(null);
@@ -124,6 +124,8 @@ const App: React.FC = () => {
     }, [transactions]);
 
     // Handlers
+    const handleDashboardToggle = () => setDashboardExpanded(prev => !prev);
+
     const showNotification = (notif: NotificationType) => {
         setNotification(notif);
         setTimeout(() => setNotification(null), 5300); // slightly longer than the component's own timeout
@@ -186,6 +188,28 @@ const App: React.FC = () => {
         showNotification({ message: 'Exchange successful!', type: 'success' });
     }
 
+    const handleUpdateBalances = async (newBalances: { pyg: number; brl: number }) => {
+        if (!accounts) {
+            showNotification({ message: 'Account data not found.', type: 'error' });
+            return;
+        }
+        const { data, error } = await supabase
+            .from('accounts')
+            .update({ pyg: newBalances.pyg, brl: newBalances.brl })
+            .eq('id', accounts.id)
+            .select()
+            .single();
+
+        if (error) {
+            showNotification({ message: 'Failed to update balances.', type: 'error' });
+            return;
+        }
+        setAccounts(data);
+        showNotification({ message: 'Balances updated successfully!', type: 'success' });
+        setActiveModal(null);
+    };
+
+
     const handleQuickAdd = (category: TransactionCategory, description: string, owedBy?: string) => {
         setQuickAddData({ category, description, owedBy });
         setActiveModal('quick-add');
@@ -197,12 +221,14 @@ const App: React.FC = () => {
             case 'dashboard':
                 return (
                     <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-                            <DashboardCard title="Cash Balance" amount={totalBalance} icon={<WalletIcon />} color="text-green-400" currency="USD" />
-                            <DashboardCard title="Monthly Income" amount={monthlyIncome} icon={<DollarSignIcon />} color="text-cyan-400" currency="USD" />
-                            <DashboardCard title="Monthly Expenses" amount={monthlyExpenses} icon={<CreditCardIcon />} color="text-rose-400" currency="USD" />
-                            <DashboardCard title="Credit Card Debt" amount={creditCardDebt} icon={<RepeatIcon />} color="text-amber-400" currency="USD" />
-                        </div>
+                        {isDashboardExpanded && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 animate-fade-in-down">
+                                <DashboardCard title="Cash Balance" amount={totalBalance} icon={<WalletIcon />} color="text-green-400" currency="USD" />
+                                <DashboardCard title="Monthly Income" amount={monthlyIncome} icon={<DollarSignIcon />} color="text-cyan-400" currency="USD" />
+                                <DashboardCard title="Monthly Expenses" amount={monthlyExpenses} icon={<CreditCardIcon />} color="text-rose-400" currency="USD" />
+                                <DashboardCard title="Credit Card Debt" amount={creditCardDebt} icon={<RepeatIcon />} color="text-amber-400" currency="USD" />
+                            </div>
+                        )}
                         {smartPrompt && (
                             <SmartPrompt 
                                 prompt={smartPrompt}
@@ -211,7 +237,7 @@ const App: React.FC = () => {
                             />
                         )}
                         <QuickAccess onQuickAdd={handleQuickAdd} onOpenAddModal={() => setActiveModal('add')} />
-                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                         <div className="grid grid-cols-1 gap-8">
                              <div className="bg-zinc-800/50 p-6 rounded-2xl shadow-lg">
                                 <h2 className="text-2xl font-bold text-white mb-4">Recent Transactions</h2>
                                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
@@ -220,7 +246,6 @@ const App: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
-                            <SubscriptionManager subscriptions={recurringPayments} setSubscriptions={setRecurringPayments} />
                         </div>
                     </>
                 );
@@ -237,7 +262,7 @@ const App: React.FC = () => {
             case 'transactions':
                 return <TransactionsPage transactions={transactions} onDelete={handleDeleteTransaction} onOpenAddModal={() => setActiveModal('add')} />;
             case 'exchange':
-                return <ExchangePage accounts={pageAccounts} transactions={transactions} onAddExchange={handleAddExchange} />;
+                return <ExchangePage accounts={pageAccounts} transactions={transactions} onAddExchange={handleAddExchange} onOpenEditBalancesModal={() => setActiveModal('edit-balances')} />;
             case 'budget':
                 return <BudgetPage monthlyIncome={monthlyIncome} monthlyTransactions={monthlyTransactions} />;
             default:
@@ -252,7 +277,11 @@ const App: React.FC = () => {
     return (
         <div className="bg-zinc-900 text-zinc-200 min-h-screen font-sans">
             <div className="max-w-7xl mx-auto p-4 md:p-8">
-                <Header onCalculatorToggle={() => setCalculatorOpen(prev => !prev)} />
+                <Header 
+                    onCalculatorToggle={() => setCalculatorOpen(prev => !prev)} 
+                    isDashboardExpanded={isDashboardExpanded}
+                    onDashboardToggle={handleDashboardToggle}
+                />
                 <Navigation currentPage={currentPage} onNavigate={(page) => setCurrentPage(page)} />
                 <main className="pb-24 md:pb-0">
                     {renderPage()}
@@ -261,6 +290,7 @@ const App: React.FC = () => {
             {isCalculatorOpen && <Calculator onClose={() => setCalculatorOpen(false)} />}
             {activeModal === 'add' && <AddTransactionForm onClose={() => setActiveModal(null)} onAddTransaction={handleAddTransaction} prefillCategory={quickAddData?.category} />}
             {activeModal === 'quick-add' && quickAddData && <QuickAddForm onClose={() => { setActiveModal(null); setQuickAddData(null); }} onAddTransaction={handleAddTransaction} {...quickAddData} />}
+            {activeModal === 'edit-balances' && accounts && <EditBalancesModal accounts={accounts} onClose={() => setActiveModal(null)} onSave={handleUpdateBalances} />}
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
         </div>
     );

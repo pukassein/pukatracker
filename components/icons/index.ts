@@ -1,4 +1,5 @@
 
+
 export { default as AlertTriangleIcon } from './AlertTriangleIcon';
 export { default as BankIcon } from './BankIcon';
 export { default as BillsIcon } from './BillsIcon';
@@ -7,6 +8,7 @@ export * from './CalculatorIcon';
 export { default as CheckCircleIcon } from './CheckCircleIcon';
 export { default as CheckIcon } from './CheckIcon';
 export { default as ChevronDownIcon } from './ChevronDownIcon';
+export { default as ChevronUpIcon } from './ChevronUpIcon';
 export { default as ClothesIcon } from './ClothesIcon';
 export { default as CoffeeIcon } from './CoffeeIcon';
 export { default as CreditCardIcon } from './CreditCardIcon';
@@ -15,15 +17,19 @@ export { default as DashboardIcon } from './DashboardIcon';
 export { default as DollarSignIcon } from './DollarSignIcon';
 export { default as EntertainmentIcon } from './EntertainmentIcon';
 export { default as ExchangeIcon } from './ExchangeIcon';
+export { default as EyeIcon } from './EyeIcon';
+export { default as EyeOffIcon } from './EyeOffIcon';
 export { default as FoodIcon } from './FoodIcon';
 export { default as GadgetsIcon } from './GadgetsIcon';
 export { default as HealthIcon } from './HealthIcon';
 export { default as HomeIcon } from './HomeIcon';
 export { default as IncomeIcon } from './IncomeIcon';
+export { default as LaundryIcon } from './LaundryIcon';
 export { default as ListIcon } from './ListIcon';
 export { default as LunchIcon } from './LunchIcon';
 export { default as MinusIcon } from './MinusIcon';
 export { default as OtherIcon } from './OtherIcon';
+export { default as PencilIcon } from './PencilIcon';
 export { default as PlusIcon } from './PlusIcon';
 export { default as RepeatIcon } from './RepeatIcon';
 export { default as ShoppingIcon } from './ShoppingIcon';

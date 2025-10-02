@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Transaction, Accounts } from '../types';
-import { BankIcon, DollarSignIcon, ExchangeIcon } from './icons';
+import { BankIcon, DollarSignIcon, ExchangeIcon, PencilIcon } from './icons';
 import DashboardCard from './DashboardCard';
 
 interface ExchangePageProps {
     accounts: Accounts;
     transactions: Transaction[];
     onAddExchange: (pygSold: number, brlReceived: number) => void;
+    onOpenEditBalancesModal: () => void;
 }
 
-const ExchangePage: React.FC<ExchangePageProps> = ({ accounts, transactions, onAddExchange }) => {
+const ExchangePage: React.FC<ExchangePageProps> = ({ accounts, transactions, onAddExchange, onOpenEditBalancesModal }) => {
     const [pygAmount, setPygAmount] = useState('');
     const [brlAmount, setBrlAmount] = useState('');
     const [error, setError] = useState('');
@@ -41,9 +42,18 @@ const ExchangePage: React.FC<ExchangePageProps> = ({ accounts, transactions, onA
 
     return (
         <div className="max-w-7xl mx-auto">
-            <header className="flex items-center gap-3 mb-6">
-                 <ExchangeIcon className="w-8 h-8 text-emerald-400" />
-                <h1 className="text-3xl font-bold text-white">Currency Exchange</h1>
+            <header className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                    <ExchangeIcon className="w-8 h-8 text-emerald-400" />
+                    <h1 className="text-3xl font-bold text-white">Currency Exchange</h1>
+                </div>
+                <button 
+                    onClick={onOpenEditBalancesModal}
+                    className="flex items-center justify-center gap-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
+                >
+                    <PencilIcon className="w-4 h-4" />
+                    Edit Balances
+                </button>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
