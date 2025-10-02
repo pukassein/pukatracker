@@ -13,12 +13,9 @@ interface RecurringPaymentsPageProps {
     onNotify: (notification: { message: string; type: 'success' | 'error' }) => void;
 }
 
-// FIX: Changed ICONS type from Record<string, React.ReactNode> to a more specific
-// Record<'rent' | 'condominio' | 'wifi' | 'default', React.ReactElement>. This ensures
-// that the keys are strongly typed, fixing an issue where `setIcon` was receiving a generic 'string'.
-// It also types the values as React.ReactElement, which allows React.cloneElement to correctly
-// infer props and resolves an error about the 'className' property not existing.
-const ICONS: Record<'rent' | 'condominio' | 'wifi' | 'default', React.ReactElement> = {
+// FIX: The type for ICONS was specified as React.ReactElement<React.SVGProps<SVGSVGElement>>
+// to ensure TypeScript can validate the `className` prop passed to React.cloneElement, resolving an overload error.
+const ICONS: Record<'rent' | 'condominio' | 'wifi' | 'default', React.ReactElement<React.SVGProps<SVGSVGElement>>> = {
     rent: <HomeIcon className="w-6 h-6" />,
     condominio: <BuildingIcon className="w-6 h-6" />,
     wifi: <WifiIcon className="w-6 h-6" />,
