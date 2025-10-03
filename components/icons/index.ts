@@ -33,9 +33,11 @@ export { default as PencilIcon } from './PencilIcon';
 export { default as PlusIcon } from './PlusIcon';
 export { default as RepeatIcon } from './RepeatIcon';
 export { default as ShoppingIcon } from './ShoppingIcon';
+export { default as SubscriptionIcon } from './SubscriptionIcon';
 export { default as TargetIcon } from './TargetIcon';
 export { default as TransportIcon } from './TransportIcon';
 export { default as TravelIcon } from './TravelIcon';
+// FIX: Export `UndoIcon` to make it available for import in other components.
 export { default as UndoIcon } from './UndoIcon';
 export { default as UserIcon } from './UserIcon';
 export { default as WalletIcon } from './WalletIcon';

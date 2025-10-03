@@ -30,11 +30,30 @@ export interface Database {
           nextPaymentDate: string;
           paidMonths: string[] | null;
           icon: 'rent' | 'condominio' | 'wifi' | 'default' | null;
-          startDate: string | null;
           created_at: string;
         };
-        Insert: Omit<RecurringPayment, 'id'>;
-        Update: Partial<RecurringPayment>;
+        Insert: {
+          name: string;
+          amount: number;
+          type: string;
+          category: string;
+          paymentMethod: string;
+          billingCycle: string;
+          nextPaymentDate: string;
+          paidMonths?: string[] | null;
+          icon?: 'rent' | 'condominio' | 'wifi' | 'default' | null;
+        };
+        Update: {
+          name?: string;
+          amount?: number;
+          type?: string;
+          category?: string;
+          paymentMethod?: string;
+          billingCycle?: string;
+          nextPaymentDate?: string;
+          paidMonths?: string[] | null;
+          icon?: 'rent' | 'condominio' | 'wifi' | 'default' | null;
+        };
       };
       transactions: {
         Row: {
@@ -50,8 +69,28 @@ export interface Database {
           brlReceived: number | null;
           created_at: string;
         };
-        Insert: Omit<Transaction, 'id'>;
-        Update: Partial<Transaction>;
+        Insert: {
+          type: string;
+          date: string;
+          amount?: number | null;
+          description?: string | null;
+          category?: string | null;
+          paymentMethod?: string | null;
+          owedBy?: string | null;
+          pygSold?: number | null;
+          brlReceived?: number | null;
+        };
+        Update: {
+          type?: string;
+          date?: string;
+          amount?: number | null;
+          description?: string | null;
+          category?: string | null;
+          paymentMethod?: string | null;
+          owedBy?: string | null;
+          pygSold?: number | null;
+          brlReceived?: number | null;
+        };
       };
     };
   };
@@ -110,7 +149,6 @@ export interface RecurringPayment {
     nextPaymentDate: string;
     paidMonths?: string[] | null; // e.g., ["2024-01", "2024-02"]
     icon?: 'rent' | 'condominio' | 'wifi' | 'default' | null;
-    startDate?: string | null; // e.g., "2024-09-01"
 }
 
 export interface SmartPromptData {

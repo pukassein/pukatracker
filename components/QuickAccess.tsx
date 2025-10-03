@@ -14,12 +14,14 @@ import {
     BillsIcon,
     EntertainmentIcon,
     HealthIcon,
-    LaundryIcon
+    LaundryIcon,
+    SubscriptionIcon
 } from './icons';
 
 interface QuickAccessProps {
     onQuickAdd: (category: TransactionCategory, description: string, owedBy?: string) => void;
     onOpenAddModal: () => void;
+    onOpenBillSelection: () => void;
 }
 
 const quickAddItems = [
@@ -27,7 +29,8 @@ const quickAddItems = [
     { label: 'Coffee', category: TransactionCategory.Food, description: "Coffee", icon: <CoffeeIcon /> },
     { label: 'Groceries', category: TransactionCategory.Food, description: "Groceries", icon: <ShoppingIcon /> },
     { label: 'Transport', category: TransactionCategory.Transport, description: "Transport", icon: <TransportIcon /> },
-    { label: 'Bills', category: TransactionCategory.Bills, description: "Bills", icon: <BillsIcon /> },
+    { label: 'Bills', category: TransactionCategory.Bills, description: "Bills", icon: <BillsIcon />, specialAction: true },
+    { label: 'Subscription', category: TransactionCategory.Bills, description: "Subscription", icon: <SubscriptionIcon /> },
     { label: 'Laundry', category: TransactionCategory.Bills, description: "Laundry", icon: <LaundryIcon /> },
     { label: 'Entertainment', category: TransactionCategory.Entertainment, description: "Entertainment", icon: <EntertainmentIcon /> },
     { label: 'Health', category: TransactionCategory.Health, description: "Health", icon: <HealthIcon /> },
@@ -37,15 +40,15 @@ const quickAddItems = [
     { label: "Dad's Expense", category: TransactionCategory.Other, description: "Dad's Expense", icon: <UserIcon />, owedBy: 'dad' },
 ];
 
-const QuickAccess: React.FC<QuickAccessProps> = ({ onQuickAdd, onOpenAddModal }) => {
+const QuickAccess: React.FC<QuickAccessProps> = ({ onQuickAdd, onOpenAddModal, onOpenBillSelection }) => {
     return (
         <div className="mb-8">
             <h2 className="text-xl font-bold text-white mb-3">Quick Add</h2>
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
+            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-3 md:gap-4">
                 {quickAddItems.map(item => (
                     <button
                         key={item.label}
-                        onClick={() => onQuickAdd(item.category, item.description, item.owedBy)}
+                        onClick={() => item.specialAction ? onOpenBillSelection() : onQuickAdd(item.category, item.description, item.owedBy)}
                         className="flex flex-col items-center justify-center gap-2 p-3 md:p-4 bg-zinc-800/50 hover:bg-zinc-700/80 rounded-2xl transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 aspect-square"
                         aria-label={`Quick add ${item.label}`}
                     >

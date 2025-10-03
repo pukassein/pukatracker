@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import { Transaction, RecurringPayment, SmartPromptData, TransactionCategory, Database, Accounts } from './types';
@@ -14,6 +15,7 @@ import QuickAccess from './components/QuickAccess';
 import QuickAddForm from './components/QuickAddForm';
 import Notification from './components/Notification';
 import EditBalancesModal from './components/EditBalancesModal';
+import BillSelectionModal from './components/BillSelectionModal';
 
 // Pages
 import DadsExpensesPage from './components/DadsExpensesPage';
@@ -26,8 +28,9 @@ import BudgetPage from './components/BudgetPage';
 import { WalletIcon, DollarSignIcon, CreditCardIcon, RepeatIcon } from './components/icons';
 
 type Page = 'dashboard' | 'recurring' | 'dads-expenses' | 'transactions' | 'exchange' | 'budget';
-type Modal = 'add' | 'quick-add' | 'exchange' | 'edit-balances' | null;
+type Modal = 'add' | 'quick-add' | 'exchange' | 'edit-balances' | 'bill-selection' | null;
 type NotificationType = { message: string; type: 'success' | 'error' };
+type BillType = 'Rent' | 'Wifi' | 'Condominio' | 'Other';
 
 const App: React.FC = () => {
     // State
@@ -214,6 +217,19 @@ const App: React.FC = () => {
         setQuickAddData({ category, description, owedBy });
         setActiveModal('quick-add');
     };
+    
+    const handleSelectBill = (bill: BillType) => {
+        setActiveModal(null); // Close selection modal first
+        if (bill === 'Other') {
+            // Open the full form for a generic bill
+            setQuickAddData({ category: TransactionCategory.Bills, description: '' });
+            setActiveModal('add');
+        } else {
+            // Open the quick add form for a specific bill
+            setQuickAddData({ category: TransactionCategory.Bills, description: bill });
+            setActiveModal('quick-add');
+        }
+    };
 
     const renderPage = () => {
         const pageAccounts: Accounts = accounts ? { pyg: accounts.pyg, brl: accounts.brl } : { pyg: 0, brl: 0 };
@@ -236,7 +252,7 @@ const App: React.FC = () => {
                                 onDismiss={() => setSmartPrompt(null)}
                             />
                         )}
-                        <QuickAccess onQuickAdd={handleQuickAdd} onOpenAddModal={() => setActiveModal('add')} />
+                        <QuickAccess onQuickAdd={handleQuickAdd} onOpenAddModal={() => setActiveModal('add')} onOpenBillSelection={() => setActiveModal('bill-selection')} />
                          <div className="grid grid-cols-1 gap-8">
                              <div className="bg-zinc-800/50 p-6 rounded-2xl shadow-lg">
                                 <h2 className="text-2xl font-bold text-white mb-4">Recent Transactions</h2>
@@ -253,8 +269,6 @@ const App: React.FC = () => {
                 return <RecurringPaymentsPage 
                     recurringPayments={recurringPayments} 
                     setRecurringPayments={setRecurringPayments} 
-                    transactions={transactions}
-                    setTransactions={setTransactions} 
                     onNotify={showNotification} 
                 />;
             case 'dads-expenses':
@@ -291,6 +305,7 @@ const App: React.FC = () => {
             {activeModal === 'add' && <AddTransactionForm onClose={() => setActiveModal(null)} onAddTransaction={handleAddTransaction} prefillCategory={quickAddData?.category} />}
             {activeModal === 'quick-add' && quickAddData && <QuickAddForm onClose={() => { setActiveModal(null); setQuickAddData(null); }} onAddTransaction={handleAddTransaction} {...quickAddData} />}
             {activeModal === 'edit-balances' && accounts && <EditBalancesModal accounts={accounts} onClose={() => setActiveModal(null)} onSave={handleUpdateBalances} />}
+            {activeModal === 'bill-selection' && <BillSelectionModal onClose={() => setActiveModal(null)} onSelect={handleSelectBill} />}
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
         </div>
     );

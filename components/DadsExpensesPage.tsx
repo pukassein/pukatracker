@@ -104,4 +104,4 @@ const DadsExpensesPage: React.FC<DadsExpensesPageProps> = ({ transactions, setTr
     );
 };
 
-export default DadsExpensesPage;   
+export default DadsExpensesPage;
