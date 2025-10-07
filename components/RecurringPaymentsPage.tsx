@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { RecurringPayment } from '../types';
 import { supabase } from '../supabaseClient';
-import { HomeIcon, BuildingIcon, WifiIcon, CheckIcon } from './icons';
+import { HomeIcon, BuildingIcon, WifiIcon, CheckIcon, LightbulbIcon } from './icons';
 
 interface RecurringPaymentsPageProps {
     recurringPayments: RecurringPayment[];
@@ -14,6 +14,7 @@ const CHECKLIST_ITEMS = [
     { name: 'Rent', icon: <HomeIcon className="w-6 h-6" /> },
     { name: 'Condominio', icon: <BuildingIcon className="w-6 h-6" /> },
     { name: 'Wifi', icon: <WifiIcon className="w-6 h-6" /> },
+    { name: 'Luz', icon: <LightbulbIcon className="w-6 h-6" /> },
 ];
 
 const RecurringPaymentsPage: React.FC<RecurringPaymentsPageProps> = ({ recurringPayments, setRecurringPayments, onNotify }) => {

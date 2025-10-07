@@ -1,5 +1,6 @@
 
 
+
 export { default as AlertTriangleIcon } from './AlertTriangleIcon';
 export { default as BankIcon } from './BankIcon';
 export { default as BillsIcon } from './BillsIcon';
@@ -25,6 +26,7 @@ export { default as HealthIcon } from './HealthIcon';
 export { default as HomeIcon } from './HomeIcon';
 export { default as IncomeIcon } from './IncomeIcon';
 export { default as LaundryIcon } from './LaundryIcon';
+export { default as LightbulbIcon } from './LightbulbIcon';
 export { default as ListIcon } from './ListIcon';
 export { default as LunchIcon } from './LunchIcon';
 export { default as MinusIcon } from './MinusIcon';

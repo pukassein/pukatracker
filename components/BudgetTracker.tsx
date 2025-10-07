@@ -1,6 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Transaction, TransactionCategory } from '../types';
-import { BillsIcon, FoodIcon, TransportIcon, HealthIcon, EntertainmentIcon, ShoppingIcon, PlusIcon } from './icons';
+import { 
+    BillsIcon, 
+    FoodIcon, 
+    TransportIcon, 
+    HealthIcon, 
+    EntertainmentIcon, 
+    ShoppingIcon, 
+    PlusIcon,
+    ChevronDownIcon,
+    ChevronUpIcon
+} from './icons';
 
 interface BudgetTrackerProps {
     monthlyIncome: number;
@@ -49,6 +59,11 @@ const budgetConfig = [
 const savingsTarget = 0.20;
 
 const BudgetTracker: React.FC<BudgetTrackerProps> = ({ monthlyIncome, monthlyTransactions }) => {
+    const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
+    const handleToggleExpand = (categoryName: string) => {
+        setExpandedCategory(prev => (prev === categoryName ? null : categoryName));
+    };
     
     const calculateSpent = (budgetCategory: typeof budgetConfig[0]) => {
         return monthlyTransactions
@@ -82,37 +97,74 @@ const BudgetTracker: React.FC<BudgetTrackerProps> = ({ monthlyIncome, monthlyTra
                     const spent = calculateSpent(category);
                     const remaining = allocated - spent;
                     const spentPercent = allocated > 0 ? Math.min((spent / allocated) * 100, 100) : 0;
+                    const isExpanded = expandedCategory === category.name;
+                    const categoryTransactions = monthlyTransactions
+                        .filter(t => t.type === 'expense' && t.category && category.appCategories.includes(t.category))
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
 
                     let progressBarColor = 'bg-cyan-500';
                     if (spentPercent > 90) progressBarColor = 'bg-red-500';
                     else if (spentPercent > 75) progressBarColor = 'bg-yellow-500';
                     
                     return (
-                        <div key={category.name} className="bg-zinc-700/50 p-4 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                    {category.icon}
-                                    <span className="font-semibold text-white">{category.name}</span>
+                        <div key={category.name} className="bg-zinc-700/50 p-4 rounded-lg flex flex-col justify-between">
+                            <button
+                                onClick={() => handleToggleExpand(category.name)}
+                                className="w-full text-left"
+                                aria-expanded={isExpanded}
+                                aria-controls={`budget-details-${category.name}`}
+                            >
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        {category.icon}
+                                        <span className="font-semibold text-white">{category.name}</span>
+                                    </div>
+                                     <div className="flex items-center gap-2">
+                                        <span className="text-xs font-mono px-2 py-1 bg-zinc-600 rounded">{category.percentage * 100}%</span>
+                                        {isExpanded ? <ChevronUpIcon className="w-5 h-5 text-zinc-400" /> : <ChevronDownIcon className="w-5 h-5 text-zinc-400" />}
+                                    </div>
                                 </div>
-                                <span className="text-xs font-mono px-2 py-1 bg-zinc-600 rounded">{category.percentage * 100}%</span>
-                            </div>
-                            
-                            <div className="text-right mb-2">
-                                 <p className="text-lg font-bold text-white">
-                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(spent)}
-                                     <span className="text-sm text-zinc-400"> / {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(allocated)}</span>
-                                </p>
-                            </div>
+                                
+                                <div className="text-right mb-2">
+                                     <p className="text-lg font-bold text-white">
+                                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(spent)}
+                                         <span className="text-sm text-zinc-400"> / {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(allocated)}</span>
+                                    </p>
+                                </div>
 
-                            <div className="w-full bg-zinc-600 rounded-full h-2 mb-2">
-                                <div 
-                                    className={`h-2 rounded-full transition-all duration-500 ${progressBarColor}`} 
-                                    style={{ width: `${spentPercent}%` }}
-                                ></div>
-                            </div>
-                            <p className={`text-sm text-right font-medium ${remaining < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
-                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(remaining)} Left
-                            </p>
+                                <div className="w-full bg-zinc-600 rounded-full h-2 mb-2">
+                                    <div 
+                                        className={`h-2 rounded-full transition-all duration-500 ${progressBarColor}`} 
+                                        style={{ width: `${spentPercent}%` }}
+                                    ></div>
+                                </div>
+                                <p className={`text-sm text-right font-medium ${remaining < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
+                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(remaining)} Left
+                                </p>
+                            </button>
+
+                            {isExpanded && (
+                                <div id={`budget-details-${category.name}`} className="mt-4 border-t border-zinc-600 pt-3 animate-fade-in-down">
+                                    {categoryTransactions.length > 0 ? (
+                                        <ul className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                                            {categoryTransactions.map(tx => (
+                                                <li key={tx.id} className="flex justify-between items-center text-sm">
+                                                    <div>
+                                                        <p className="font-medium text-zinc-200 truncate max-w-[150px]">{tx.description}</p>
+                                                        <p className="text-xs text-zinc-400">{new Date(tx.date).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <p className="font-semibold text-red-400">
+                                                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tx.amount ?? 0)}
+                                                    </p>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-sm text-zinc-400 text-center py-2">No expenses this month.</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     );
                 })}
