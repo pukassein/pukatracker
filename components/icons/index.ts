@@ -1,7 +1,7 @@
 
 
-
 export { default as AlertTriangleIcon } from './AlertTriangleIcon';
+// FIX: Export BankIcon to make it available for import.
 export { default as BankIcon } from './BankIcon';
 export { default as BillsIcon } from './BillsIcon';
 export { default as BuildingIcon } from './BuildingIcon';
@@ -17,6 +17,7 @@ export { default as CreditCardPaymentIcon } from './CreditCardPaymentIcon';
 export { default as DashboardIcon } from './DashboardIcon';
 export { default as DollarSignIcon } from './DollarSignIcon';
 export { default as EntertainmentIcon } from './EntertainmentIcon';
+// FIX: Export ExchangeIcon to make it available for import.
 export { default as ExchangeIcon } from './ExchangeIcon';
 export { default as EyeIcon } from './EyeIcon';
 export { default as EyeOffIcon } from './EyeOffIcon';
@@ -31,7 +32,9 @@ export { default as ListIcon } from './ListIcon';
 export { default as LunchIcon } from './LunchIcon';
 export { default as MinusIcon } from './MinusIcon';
 export { default as OtherIcon } from './OtherIcon';
+// FIX: Export PencilIcon to make it available for import.
 export { default as PencilIcon } from './PencilIcon';
+export { default as PieChartIcon } from './PieChartIcon';
 export { default as PlusIcon } from './PlusIcon';
 export { default as RepeatIcon } from './RepeatIcon';
 export { default as ShoppingIcon } from './ShoppingIcon';

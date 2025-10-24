@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Transaction, RecurringPayment, SmartPromptData, TransactionCategory, Database, Accounts } from './types';
+import { Transaction, RecurringPayment, SmartPromptData, TransactionCategory, Database } from './types';
 
 // Components
 import Header from './components/Header';
@@ -14,21 +14,19 @@ import Navigation from './components/Navigation';
 import QuickAccess from './components/QuickAccess';
 import QuickAddForm from './components/QuickAddForm';
 import Notification from './components/Notification';
-import EditBalancesModal from './components/EditBalancesModal';
 import BillSelectionModal from './components/BillSelectionModal';
 
 // Pages
-import DadsExpensesPage from './components/DadsExpensesPage';
 import RecurringPaymentsPage from './components/RecurringPaymentsPage';
 import TransactionsPage from './components/TransactionsPage';
-import ExchangePage from './components/ExchangePage';
 import BudgetPage from './components/BudgetPage';
+import StatisticsPage from './components/StatisticsPage';
 
 // Icons
 import { WalletIcon, DollarSignIcon, CreditCardIcon, RepeatIcon } from './components/icons';
 
-type Page = 'dashboard' | 'recurring' | 'dads-expenses' | 'transactions' | 'exchange' | 'budget';
-type Modal = 'add' | 'quick-add' | 'exchange' | 'edit-balances' | 'bill-selection' | null;
+type Page = 'dashboard' | 'recurring' | 'transactions' | 'budget' | 'statistics';
+type Modal = 'add' | 'quick-add' | 'bill-selection' | null;
 type NotificationType = { message: string; type: 'success' | 'error' };
 type BillType = 'Rent' | 'Wifi' | 'Condominio' | 'Other';
 
@@ -36,7 +34,6 @@ const App: React.FC = () => {
     // State
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [recurringPayments, setRecurringPayments] = useState<RecurringPayment[]>([]);
-    const [accounts, setAccounts] = useState<Database['public']['Tables']['accounts']['Row'] | null>(null);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState<Page>('dashboard');
     const [activeModal, setActiveModal] = useState<Modal>(null);
@@ -59,10 +56,6 @@ const App: React.FC = () => {
                 if (recurringError) throw recurringError;
                 setRecurringPayments(recurringData as RecurringPayment[]);
                 
-                const { data: accountsData, error: accountsError } = await supabase.from('accounts').select('*').limit(1).single();
-                if (accountsError) throw accountsError;
-                setAccounts(accountsData);
-
             } catch (error) {
                 console.error("Error fetching data:", error);
                 setNotification({ message: 'Failed to load data.', type: 'error' });
@@ -157,62 +150,6 @@ const App: React.FC = () => {
         showNotification({ message: 'Transaction deleted.', type: 'success' });
     };
     
-    const handleAddExchange = async (pygSold: number, brlReceived: number) => {
-        if (!accounts) {
-             showNotification({ message: 'Accounts data not loaded.', type: 'error' });
-             return;
-        }
-        // 1. Update account balances in DB
-        const newPyg = accounts.pyg - pygSold;
-        const newBrl = accounts.brl + brlReceived;
-        const { data: updatedAccount, error: accountError } = await supabase.from('accounts').update({ pyg: newPyg, brl: newBrl }).eq('id', accounts.id).select().single();
-         if (accountError) {
-             showNotification({ message: 'Failed to update accounts.', type: 'error' });
-             return;
-         }
-
-        // 2. Add exchange transaction to DB
-        const newTransaction: Omit<Transaction, 'id'> = {
-            type: 'exchange',
-            date: new Date().toISOString(),
-            pygSold,
-            brlReceived
-        };
-        const { data: newTx, error: txError } = await supabase.from('transactions').insert(newTransaction).select().single();
-        if (txError) {
-            showNotification({ message: 'Failed to log exchange.', type: 'error' });
-            // Rollback account update?
-            return;
-        }
-
-        // 3. Update local state
-        setAccounts(updatedAccount);
-        setTransactions(prev => [newTx as unknown as Transaction, ...prev]);
-        showNotification({ message: 'Exchange successful!', type: 'success' });
-    }
-
-    const handleUpdateBalances = async (newBalances: { pyg: number; brl: number }) => {
-        if (!accounts) {
-            showNotification({ message: 'Account data not found.', type: 'error' });
-            return;
-        }
-        const { data, error } = await supabase
-            .from('accounts')
-            .update({ pyg: newBalances.pyg, brl: newBalances.brl })
-            .eq('id', accounts.id)
-            .select()
-            .single();
-
-        if (error) {
-            showNotification({ message: 'Failed to update balances.', type: 'error' });
-            return;
-        }
-        setAccounts(data);
-        showNotification({ message: 'Balances updated successfully!', type: 'success' });
-        setActiveModal(null);
-    };
-
-
     const handleQuickAdd = (category: TransactionCategory, description: string, owedBy?: string) => {
         setQuickAddData({ category, description, owedBy });
         setActiveModal('quick-add');
@@ -232,7 +169,6 @@ const App: React.FC = () => {
     };
 
     const renderPage = () => {
-        const pageAccounts: Accounts = accounts ? { pyg: accounts.pyg, brl: accounts.brl } : { pyg: 0, brl: 0 };
         switch (currentPage) {
             case 'dashboard':
                 return (
@@ -271,14 +207,12 @@ const App: React.FC = () => {
                     setRecurringPayments={setRecurringPayments} 
                     onNotify={showNotification} 
                 />;
-            case 'dads-expenses':
-                return <DadsExpensesPage transactions={transactions} setTransactions={setTransactions} onSettle={showNotification} />;
             case 'transactions':
                 return <TransactionsPage transactions={transactions} onDelete={handleDeleteTransaction} onOpenAddModal={() => setActiveModal('add')} />;
-            case 'exchange':
-                return <ExchangePage accounts={pageAccounts} transactions={transactions} onAddExchange={handleAddExchange} onOpenEditBalancesModal={() => setActiveModal('edit-balances')} />;
             case 'budget':
                 return <BudgetPage monthlyIncome={monthlyIncome} monthlyTransactions={monthlyTransactions} />;
+            case 'statistics':
+                return <StatisticsPage transactions={transactions} />;
             default:
                 return null;
         }
@@ -304,7 +238,6 @@ const App: React.FC = () => {
             {isCalculatorOpen && <Calculator onClose={() => setCalculatorOpen(false)} />}
             {activeModal === 'add' && <AddTransactionForm onClose={() => setActiveModal(null)} onAddTransaction={handleAddTransaction} prefillCategory={quickAddData?.category} />}
             {activeModal === 'quick-add' && quickAddData && <QuickAddForm onClose={() => { setActiveModal(null); setQuickAddData(null); }} onAddTransaction={handleAddTransaction} {...quickAddData} />}
-            {activeModal === 'edit-balances' && accounts && <EditBalancesModal accounts={accounts} onClose={() => setActiveModal(null)} onSave={handleUpdateBalances} />}
             {activeModal === 'bill-selection' && <BillSelectionModal onClose={() => setActiveModal(null)} onSelect={handleSelectBill} />}
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
         </div>

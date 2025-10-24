@@ -2,14 +2,15 @@
 export interface Database {
   public: {
     Tables: {
+      // FIX: Add the 'accounts' table definition to the Database interface to resolve type errors.
       accounts: {
         Row: {
           id: string;
           pyg: number;
           brl: number;
-          created_at: string;
         };
         Insert: {
+          id?: string;
           pyg: number;
           brl: number;
         };
@@ -65,9 +66,10 @@ export interface Database {
           category: string | null;
           paymentMethod: string | null;
           owedBy: string | null;
+          created_at: string;
+          // FIX: Add pygSold and brlReceived fields for currency exchange transactions.
           pygSold: number | null;
           brlReceived: number | null;
-          created_at: string;
         };
         Insert: {
           type: string;
@@ -77,6 +79,7 @@ export interface Database {
           category?: string | null;
           paymentMethod?: string | null;
           owedBy?: string | null;
+          // FIX: Add pygSold and brlReceived fields for currency exchange transactions.
           pygSold?: number | null;
           brlReceived?: number | null;
         };
@@ -88,6 +91,7 @@ export interface Database {
           category?: string | null;
           paymentMethod?: string | null;
           owedBy?: string | null;
+          // FIX: Add pygSold and brlReceived fields for currency exchange transactions.
           pygSold?: number | null;
           brlReceived?: number | null;
         };
@@ -95,6 +99,9 @@ export interface Database {
     };
   };
 }
+
+// FIX: Export the 'Accounts' type alias to be used in components.
+export type Accounts = Database['public']['Tables']['accounts']['Row'];
 
 export enum TransactionType {
     Income = 'income',
@@ -126,7 +133,7 @@ export interface Transaction {
     paymentMethod?: 'cash' | 'credit' | 'brl_account' | null;
     owedBy?: string | null; 
     
-    // For exchange
+    // FIX: Add optional properties for currency exchange transactions.
     pygSold?: number | null;
     brlReceived?: number | null;
 }
@@ -155,9 +162,4 @@ export interface SmartPromptData {
     message: string;
     category: TransactionCategory;
     icon: 'coffee' | 'lunch';
-}
-
-export interface Accounts {
-    pyg: number;
-    brl: number;
 }

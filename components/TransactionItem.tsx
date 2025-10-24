@@ -19,7 +19,7 @@ import {
 
 interface TransactionItemProps {
     transaction: Transaction;
-    onDelete: (id: string) => void;
+    onDelete?: (id: string) => void;
 }
 
 const categoryIcons: Record<TransactionCategory, React.ReactNode> = {
@@ -82,13 +82,15 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, onDelete
                  <p className={`font-bold text-lg ${amountColor}`}>
                     {amountPrefix}{formattedAmount}
                 </p>
-                <button 
-                    onClick={() => onDelete(transaction.id)}
-                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-white transition-opacity duration-200"
-                    aria-label="Delete transaction"
-                >
-                    <XIcon className="w-4 h-4" />
-                </button>
+                {onDelete && (
+                    <button 
+                        onClick={() => onDelete(transaction.id)}
+                        className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-white transition-opacity duration-200"
+                        aria-label="Delete transaction"
+                    >
+                        <XIcon className="w-4 h-4" />
+                    </button>
+                )}
             </div>
         </div>
     );
