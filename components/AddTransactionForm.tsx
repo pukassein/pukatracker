@@ -25,6 +25,7 @@ const categoryRecommendations: Partial<Record<TransactionCategory, string[]>> = 
 const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose, onAddTransaction, prefillCategory }) => {
     const [type, setType] = useState<'income' | 'expense'>('expense');
     const [amount, setAmount] = useState('');
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState<TransactionCategory>(TransactionCategory.Food);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'credit' | 'brl_account'>('cash');
@@ -55,7 +56,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose, onAddT
             transactionData.paymentMethod = paymentMethod;
         }
 
-        onAddTransaction(transactionData, new Date().toISOString());
+        onAddTransaction(transactionData, new Date(date).toISOString());
     };
 
     const expenseCategories = Object.values(TransactionCategory).filter(c => c !== TransactionCategory.Income);
@@ -113,6 +114,18 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose, onAddT
                             className="w-full bg-zinc-700 border-zinc-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             required
                             step="0.01"
+                        />
+                    </div>
+
+                     <div>
+                        <label htmlFor="date" className="block text-sm font-medium text-zinc-400 mb-1">Date</label>
+                        <input
+                            id="date"
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full bg-zinc-700 border-zinc-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            required
                         />
                     </div>
                      

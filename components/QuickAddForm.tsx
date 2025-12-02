@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Transaction, TransactionCategory } from '../types';
 import { XIcon } from './icons';
@@ -13,6 +12,7 @@ interface QuickAddFormProps {
 
 const QuickAddForm: React.FC<QuickAddFormProps> = ({ onClose, onAddTransaction, category, description, owedBy }) => {
     const [amount, setAmount] = useState('');
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [customDescription, setCustomDescription] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'credit'>('credit');
 
@@ -34,7 +34,7 @@ const QuickAddForm: React.FC<QuickAddFormProps> = ({ onClose, onAddTransaction, 
             category,
             paymentMethod: paymentMethod,
             owedBy: owedBy,
-        }, new Date().toISOString());
+        }, new Date(date).toISOString());
         onClose();
     };
 
@@ -67,6 +67,17 @@ const QuickAddForm: React.FC<QuickAddFormProps> = ({ onClose, onAddTransaction, 
                             required
                             autoFocus={!isDadsExpense}
                             step="0.01"
+                        />
+                    </div>
+                     <div>
+                        <label htmlFor="quick-date" className="block text-sm font-medium text-zinc-400 mb-1">Date</label>
+                        <input
+                            id="quick-date"
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full bg-zinc-700 border-zinc-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            required
                         />
                     </div>
                     {isDadsExpense && (

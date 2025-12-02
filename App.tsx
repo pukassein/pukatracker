@@ -77,12 +77,26 @@ const App: React.FC = () => {
         }
     }, []);
 
+    const parseTransactionDate = (dateString: string): Date => {
+        // Handles UTC timestamps that may be stored without timezone info in the DB.
+        // Appending 'Z' ensures they are parsed as UTC, not local time.
+        const normalizedDateStr = dateString.replace(' ', 'T');
+        if (normalizedDateStr.endsWith('Z') || /[\+\-]\d{2}:\d{2}$/.test(normalizedDateStr)) {
+            return new Date(normalizedDateStr);
+        }
+        return new Date(normalizedDateStr + 'Z');
+    };
+    
     // Memoized Calculations
     const { monthlyIncome, monthlyExpenses, totalBalance, creditCardDebt } = useMemo(() => {
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
 
-        const currentMonthTxs = transactions.filter(t => new Date(t.date) >= startOfMonth);
+        const currentMonthTxs = transactions.filter(t => {
+            const txDate = parseTransactionDate(t.date);
+            return txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth;
+        });
 
         const income = currentMonthTxs
             .filter(t => t.type === 'income')
@@ -115,8 +129,12 @@ const App: React.FC = () => {
     
     const monthlyTransactions = useMemo(() => {
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        return transactions.filter(t => new Date(t.date) >= startOfMonth);
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        return transactions.filter(t => {
+            const txDate = parseTransactionDate(t.date);
+            return txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth;
+        });
     }, [transactions]);
 
     // Handlers
