@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Transaction, Accounts } from '../types';
 import { BankIcon, DollarSignIcon, ExchangeIcon, PencilIcon } from './icons';
 import DashboardCard from './DashboardCard';
@@ -14,6 +14,26 @@ const ExchangePage: React.FC<ExchangePageProps> = ({ accounts, transactions, onA
     const [pygAmount, setPygAmount] = useState('');
     const [brlAmount, setBrlAmount] = useState('');
     const [error, setError] = useState('');
+    const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+    const [loadingRate, setLoadingRate] = useState(true);
+
+    useEffect(() => {
+        const fetchRate = async () => {
+            try {
+                // Fetch rates with BRL as base
+                const response = await fetch('https://open.er-api.com/v6/latest/BRL');
+                const data = await response.json();
+                if (data && data.rates && data.rates.PYG) {
+                    setExchangeRate(data.rates.PYG); // 1 BRL = X PYG
+                }
+            } catch (err) {
+                console.error("Failed to fetch exchange rate", err);
+            } finally {
+                setLoadingRate(false);
+            }
+        };
+        fetchRate();
+    }, []);
 
     const exchangeHistory = useMemo(() => {
         return transactions.filter(t => t.type === 'exchange');
@@ -40,6 +60,9 @@ const ExchangePage: React.FC<ExchangePageProps> = ({ accounts, transactions, onA
         setBrlAmount('');
     };
 
+    const pygInBrl = exchangeRate ? accounts.pyg / exchangeRate : 0;
+    const totalInBrl = accounts.brl + pygInBrl;
+
     return (
         <div className="max-w-7xl mx-auto">
             <header className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
@@ -47,24 +70,56 @@ const ExchangePage: React.FC<ExchangePageProps> = ({ accounts, transactions, onA
                     <ExchangeIcon className="w-8 h-8 text-emerald-400" />
                     <h1 className="text-3xl font-bold text-white">Currency Exchange</h1>
                 </div>
-                <button 
-                    onClick={onOpenEditBalancesModal}
-                    className="flex items-center justify-center gap-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
-                >
-                    <PencilIcon className="w-4 h-4" />
-                    Edit Balances
-                </button>
+                <div className="flex gap-2">
+                     <button 
+                        onClick={onOpenEditBalancesModal}
+                        className="flex items-center justify-center gap-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
+                    >
+                        <PencilIcon className="w-4 h-4" />
+                        Edit Balances
+                    </button>
+                </div>
             </header>
 
+            {/* Total Balance Section */}
+            <div className="mb-8 bg-gradient-to-r from-emerald-900/50 to-zinc-900/50 p-6 rounded-2xl border border-emerald-500/20 shadow-lg">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-zinc-400 text-sm font-medium uppercase tracking-wider">Total Net Worth (Estimated)</h2>
+                        <div className="text-4xl font-bold text-white mt-1">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalInBrl)}
+                        </div>
+                        {exchangeRate && (
+                            <p className="text-xs text-zinc-500 mt-2">
+                                Based on rate: 1 BRL ≈ {new Intl.NumberFormat('es-PY', { maximumFractionDigits: 2 }).format(exchangeRate)} PYG
+                            </p>
+                        )}
+                    </div>
+                    <div className="text-right hidden md:block">
+                        <div className="text-zinc-400 text-sm">PYG Contribution</div>
+                        <div className="text-emerald-400 font-medium">
+                            + {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pygInBrl)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <DashboardCard title="PYG Bank Account" amount={accounts.pyg} icon={<BankIcon />} color="text-green-400" currency="PYG" />
+                <div className="relative">
+                    <DashboardCard title="PYG Bank Account" amount={accounts.pyg} icon={<BankIcon />} color="text-green-400" currency="PYG" />
+                    {exchangeRate && (
+                        <div className="absolute top-4 right-4 bg-zinc-800/80 px-2 py-1 rounded text-xs text-zinc-300">
+                            ≈ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pygInBrl)}
+                        </div>
+                    )}
+                </div>
                 <DashboardCard title="BRL Balance" amount={accounts.brl} icon={<DollarSignIcon />} color="text-yellow-400" currency="BRL" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Form Section */}
                 <div className="bg-zinc-800/50 p-6 rounded-2xl shadow-lg">
-                     <h2 className="text-2xl font-bold mb-4 text-white">New Exchange</h2>
+                     <h2 className="text-2xl font-bold mb-4 text-white">Record Exchange</h2>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label htmlFor="pyg-amount" className="block text-sm font-medium text-zinc-300 mb-1">You Sell (PYG)</label>
