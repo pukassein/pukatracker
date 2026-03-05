@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Transaction, RecurringPayment, SmartPromptData, TransactionCategory, Database } from './types';
+import { Transaction, RecurringPayment, SmartPromptData, TransactionCategory, Database, Accounts } from './types';
 
 // Components
 import Header from './components/Header';
@@ -15,18 +15,20 @@ import QuickAccess from './components/QuickAccess';
 import QuickAddForm from './components/QuickAddForm';
 import Notification from './components/Notification';
 import BillSelectionModal from './components/BillSelectionModal';
+import EditBalancesModal from './components/EditBalancesModal';
 
 // Pages
 import RecurringPaymentsPage from './components/RecurringPaymentsPage';
 import TransactionsPage from './components/TransactionsPage';
 import BudgetPage from './components/BudgetPage';
 import StatisticsPage from './components/StatisticsPage';
+import ExchangePage from './components/ExchangePage';
 
 // Icons
 import { WalletIcon, DollarSignIcon, CreditCardIcon, RepeatIcon } from './components/icons';
 
-type Page = 'dashboard' | 'recurring' | 'transactions' | 'budget' | 'statistics';
-type Modal = 'add' | 'quick-add' | 'bill-selection' | null;
+type Page = 'dashboard' | 'recurring' | 'transactions' | 'budget' | 'statistics' | 'exchange';
+type Modal = 'add' | 'quick-add' | 'bill-selection' | 'edit-balances' | null;
 type NotificationType = { message: string; type: 'success' | 'error' };
 type BillType = 'Rent' | 'Wifi' | 'Condominio' | 'Other';
 
@@ -34,6 +36,8 @@ const App: React.FC = () => {
     // State
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [recurringPayments, setRecurringPayments] = useState<RecurringPayment[]>([]);
+    const [accounts, setAccounts] = useState<Accounts | null>(null);
+    const [accountsError, setAccountsError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState<Page>('dashboard');
     const [activeModal, setActiveModal] = useState<Modal>(null);
@@ -55,10 +59,26 @@ const App: React.FC = () => {
                 const { data: recurringData, error: recurringError } = await supabase.from('recurring_payments').select('*');
                 if (recurringError) throw recurringError;
                 setRecurringPayments(recurringData as RecurringPayment[]);
+
+                const { data: accountsData, error: accountsError } = await supabase.from('accounts').select('*').single();
                 
-            } catch (error) {
+                if (accountsError && accountsError.code !== 'PGRST116') { // PGRST116 is "The result contains 0 rows"
+                     throw accountsError;
+                }
+
+                if (accountsData) {
+                    setAccounts(accountsData as Accounts);
+                } else {
+                    // Create default account if none exists
+                    const { data: newAccount, error: createError } = await supabase.from('accounts').insert([{ pyg: 0, brl: 0 }]).select().single();
+                    if (createError) throw createError;
+                    setAccounts(newAccount as Accounts);
+                }
+                
+            } catch (error: any) {
                 console.error("Error fetching data:", error);
                 setNotification({ message: 'Failed to load data.', type: 'error' });
+                setAccountsError(error.message || 'Unknown error loading data');
             } finally {
                 setLoading(false);
             }
@@ -186,6 +206,71 @@ const App: React.FC = () => {
         }
     };
 
+    const handleUpdateBalances = async (newBalances: { pyg: number; brl: number }) => {
+        if (!accounts) return;
+        
+        const { data, error } = await supabase
+            .from('accounts')
+            .update(newBalances)
+            .eq('id', accounts.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating balances:', error);
+            showNotification({ message: 'Failed to update balances.', type: 'error' });
+            return;
+        }
+
+        setAccounts(data as Accounts);
+        showNotification({ message: 'Balances updated successfully!', type: 'success' });
+        setActiveModal(null);
+    };
+
+    const handleAddExchange = async (pygSold: number, brlReceived: number) => {
+        if (!accounts) return;
+
+        // 1. Create transaction record
+        const transaction = {
+            type: 'exchange',
+            date: new Date().toISOString(),
+            pygSold,
+            brlReceived,
+            description: 'Currency Exchange',
+            category: TransactionCategory.Other, // Or a specific 'Exchange' category if added
+        };
+
+        const { data: txData, error: txError } = await supabase.from('transactions').insert([transaction]).select();
+
+        if (txError) {
+            console.error('Error adding exchange transaction:', txError);
+            showNotification({ message: 'Failed to record exchange.', type: 'error' });
+            return;
+        }
+
+        // 2. Update account balances
+        const newPygBalance = accounts.pyg - pygSold;
+        const newBrlBalance = accounts.brl + brlReceived;
+
+        const { data: accData, error: accError } = await supabase
+            .from('accounts')
+            .update({ pyg: newPygBalance, brl: newBrlBalance })
+            .eq('id', accounts.id)
+            .select()
+            .single();
+
+        if (accError) {
+            console.error('Error updating account balances after exchange:', accError);
+            showNotification({ message: 'Failed to update balances.', type: 'error' });
+            // Ideally rollback transaction here, but for simplicity we'll just notify
+            return;
+        }
+
+        setTransactions(prev => [txData[0] as unknown as Transaction, ...prev]);
+        setAccounts(accData as Accounts);
+        showNotification({ message: 'Exchange recorded successfully!', type: 'success' });
+    };
+
     const renderPage = () => {
         switch (currentPage) {
             case 'dashboard':
@@ -231,6 +316,39 @@ const App: React.FC = () => {
                 return <BudgetPage monthlyIncome={monthlyIncome} monthlyTransactions={monthlyTransactions} />;
             case 'statistics':
                 return <StatisticsPage transactions={transactions} />;
+            case 'exchange':
+                if (accountsError) {
+                    return (
+                        <div className="flex flex-col items-center justify-center h-64 text-center">
+                            <div className="text-red-400 text-xl font-bold mb-2">Unable to load Exchange</div>
+                            <p className="text-zinc-400 mb-4 max-w-md">
+                                We couldn't load your account balances. This might be due to a network issue or missing database configuration.
+                            </p>
+                            <div className="bg-zinc-800 p-4 rounded-lg text-left mb-6 max-w-md w-full overflow-auto">
+                                <p className="text-xs text-zinc-500 font-mono">Error details: {accountsError}</p>
+                            </div>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors"
+                            >
+                                Reload Page
+                            </button>
+                        </div>
+                    );
+                }
+                return accounts ? (
+                    <ExchangePage 
+                        accounts={accounts} 
+                        transactions={transactions} 
+                        onAddExchange={handleAddExchange} 
+                        onOpenEditBalancesModal={() => setActiveModal('edit-balances')} 
+                    />
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-4"></div>
+                        <p>Loading your accounts...</p>
+                    </div>
+                );
             default:
                 return null;
         }
@@ -257,6 +375,7 @@ const App: React.FC = () => {
             {activeModal === 'add' && <AddTransactionForm onClose={() => setActiveModal(null)} onAddTransaction={handleAddTransaction} prefillCategory={quickAddData?.category} />}
             {activeModal === 'quick-add' && quickAddData && <QuickAddForm onClose={() => { setActiveModal(null); setQuickAddData(null); }} onAddTransaction={handleAddTransaction} {...quickAddData} />}
             {activeModal === 'bill-selection' && <BillSelectionModal onClose={() => setActiveModal(null)} onSelect={handleSelectBill} />}
+            {activeModal === 'edit-balances' && accounts && <EditBalancesModal accounts={accounts} onClose={() => setActiveModal(null)} onSave={handleUpdateBalances} />}
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
         </div>
     );
