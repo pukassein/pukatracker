@@ -8,15 +8,18 @@ export interface Database {
           id: string;
           pyg: number;
           brl: number;
+          savings_nubank: number;
         };
         Insert: {
           id?: string;
           pyg: number;
           brl: number;
+          savings_nubank?: number;
         };
         Update: {
           pyg?: number;
           brl?: number;
+          savings_nubank?: number;
         };
       };
       recurring_payments: {
@@ -123,7 +126,7 @@ export enum TransactionCategory {
 
 export interface Transaction {
     id: string;
-    type: 'income' | 'expense' | 'exchange';
+    type: 'income' | 'expense';
     date: string;
     
     // For income/expense
@@ -132,10 +135,6 @@ export interface Transaction {
     category?: TransactionCategory | null;
     paymentMethod?: 'cash' | 'credit' | 'brl_account' | null;
     owedBy?: string | null; 
-    
-    // FIX: Add optional properties for currency exchange transactions.
-    pygSold?: number | null;
-    brlReceived?: number | null;
 }
 
 

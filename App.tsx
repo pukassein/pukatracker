@@ -9,25 +9,23 @@ import DashboardCard from './components/DashboardCard';
 import TransactionItem from './components/TransactionItem';
 import AddTransactionForm from './components/AddTransactionForm';
 import Calculator from './components/Calculator';
-import SmartPrompt from './components/SmartPrompt';
 import Navigation from './components/Navigation';
-import QuickAccess from './components/QuickAccess';
 import QuickAddForm from './components/QuickAddForm';
 import Notification from './components/Notification';
 import BillSelectionModal from './components/BillSelectionModal';
 import EditBalancesModal from './components/EditBalancesModal';
+import BalanceUpdater from './components/BalanceUpdater';
 
 // Pages
 import RecurringPaymentsPage from './components/RecurringPaymentsPage';
 import TransactionsPage from './components/TransactionsPage';
 import BudgetPage from './components/BudgetPage';
 import StatisticsPage from './components/StatisticsPage';
-import ExchangePage from './components/ExchangePage';
 
 // Icons
 import { WalletIcon, DollarSignIcon, CreditCardIcon, RepeatIcon } from './components/icons';
 
-type Page = 'dashboard' | 'recurring' | 'transactions' | 'budget' | 'statistics' | 'exchange';
+type Page = 'dashboard' | 'recurring' | 'transactions' | 'budget' | 'statistics';
 type Modal = 'add' | 'quick-add' | 'bill-selection' | 'edit-balances' | null;
 type NotificationType = { message: string; type: 'success' | 'error' };
 type BillType = 'Rent' | 'Wifi' | 'Condominio' | 'Other';
@@ -132,10 +130,10 @@ const App: React.FC = () => {
             return acc;
         }, 0);
         
-        const debt = transactions
+        const debt = currentMonthTxs
             .filter(t => t.type === 'expense' && t.paymentMethod === 'credit')
             .reduce((sum, t) => sum + (t.amount ?? 0), 0);
-        const payments = transactions
+        const payments = currentMonthTxs
             .filter(t => t.category === TransactionCategory.CreditCard)
             .reduce((sum, t) => sum + (t.amount ?? 0), 0);
 
@@ -206,7 +204,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handleUpdateBalances = async (newBalances: { pyg: number; brl: number }) => {
+    const handleUpdateBalances = async (newBalances: { pyg: number; brl: number; savings_nubank: number }) => {
         if (!accounts) return;
         
         const { data, error } = await supabase
@@ -227,71 +225,93 @@ const App: React.FC = () => {
         setActiveModal(null);
     };
 
-    const handleAddExchange = async (pygSold: number, brlReceived: number) => {
-        if (!accounts) return;
+    const handleBalanceUpdate = async (
+        account: 'credit' | 'brl' | 'pyg' | 'savings_nubank', 
+        newBalance: number, 
+        delta: number, 
+        categories: { category: TransactionCategory, amount: number }[]
+    ) => {
+        const date = new Date().toISOString();
+        const transactionsToInsert: Omit<Transaction, 'id'>[] = [];
 
-        // 1. Create transaction record
-        const transaction = {
-            type: 'exchange',
-            date: new Date().toISOString(),
-            pygSold,
-            brlReceived,
-            description: 'Currency Exchange',
-            category: TransactionCategory.Other, // Or a specific 'Exchange' category if added
-        };
+        if (account === 'credit') {
+            categories.forEach(cat => {
+                transactionsToInsert.push({
+                    type: 'expense',
+                    date,
+                    amount: cat.amount,
+                    category: cat.category,
+                    paymentMethod: delta > 0 ? 'credit' : null,
+                    description: delta > 0 ? `Credit Card Update (${cat.category})` : 'Credit Card Payment (Manual Update)',
+                });
+            });
+        } else {
+            const paymentMethod = account === 'brl' ? 'brl_account' : 'cash';
+            
+            categories.forEach(cat => {
+                transactionsToInsert.push({
+                    type: delta > 0 ? 'expense' : 'income',
+                    date,
+                    amount: cat.amount,
+                    category: cat.category,
+                    paymentMethod,
+                    description: `${account.toUpperCase()} Balance Update (${cat.category})`,
+                });
+            });
 
-        const { data: txData, error: txError } = await supabase.from('transactions').insert([transaction]).select();
-
-        if (txError) {
-            console.error('Error adding exchange transaction:', txError);
-            showNotification({ message: 'Failed to record exchange.', type: 'error' });
-            return;
+            if (accounts) {
+                const newAccounts = { ...accounts, [account]: newBalance };
+                const { error: accError } = await supabase
+                    .from('accounts')
+                    .update({ [account]: newBalance })
+                    .eq('id', accounts.id);
+                if (accError) {
+                    console.error('Error updating accounts:', accError);
+                    showNotification({ message: 'Failed to update account balance.', type: 'error' });
+                    return;
+                }
+                setAccounts(newAccounts);
+            }
         }
 
-        // 2. Update account balances
-        const newPygBalance = accounts.pyg - pygSold;
-        const newBrlBalance = accounts.brl + brlReceived;
-
-        const { data: accData, error: accError } = await supabase
-            .from('accounts')
-            .update({ pyg: newPygBalance, brl: newBrlBalance })
-            .eq('id', accounts.id)
-            .select()
-            .single();
-
-        if (accError) {
-            console.error('Error updating account balances after exchange:', accError);
-            showNotification({ message: 'Failed to update balances.', type: 'error' });
-            // Ideally rollback transaction here, but for simplicity we'll just notify
-            return;
+        if (transactionsToInsert.length > 0) {
+            const { data, error } = await supabase.from('transactions').insert(transactionsToInsert).select();
+            if (error) {
+                console.error('Supabase insert error:', error);
+                showNotification({ message: 'Failed to log transactions.', type: 'error' });
+                return;
+            }
+            setTransactions(prev => [...(data as unknown as Transaction[]), ...prev]);
         }
 
-        setTransactions(prev => [txData[0] as unknown as Transaction, ...prev]);
-        setAccounts(accData as Accounts);
-        showNotification({ message: 'Exchange recorded successfully!', type: 'success' });
+        showNotification({ message: 'Balances updated successfully!', type: 'success' });
     };
 
     const renderPage = () => {
+        const currentMonthName = new Date().toLocaleString('default', { month: 'long' });
+        
         switch (currentPage) {
             case 'dashboard':
                 return (
                     <>
                         {isDashboardExpanded && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 animate-fade-in-down">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-8 animate-fade-in-down">
                                 <DashboardCard title="Cash Balance" amount={totalBalance} icon={<WalletIcon />} color="text-green-400" currency="USD" />
                                 <DashboardCard title="Monthly Income" amount={monthlyIncome} icon={<DollarSignIcon />} color="text-cyan-400" currency="USD" />
                                 <DashboardCard title="Monthly Expenses" amount={monthlyExpenses} icon={<CreditCardIcon />} color="text-rose-400" currency="USD" />
-                                <DashboardCard title="Credit Card Debt" amount={creditCardDebt} icon={<RepeatIcon />} color="text-amber-400" currency="USD" />
+                                <DashboardCard title={`${currentMonthName}'s Credit Debt`} amount={creditCardDebt} icon={<RepeatIcon />} color="text-amber-400" currency="USD" />
+                                <DashboardCard title="Caixinha Nu Bank" amount={accounts?.savings_nubank || 0} icon={<WalletIcon />} color="text-purple-400" currency="BRL" />
                             </div>
                         )}
-                        {smartPrompt && (
-                            <SmartPrompt 
-                                prompt={smartPrompt}
-                                onAddExpense={(category) => { setActiveModal('add'); setQuickAddData({ category, description: '', owedBy: undefined }); setSmartPrompt(null); }}
-                                onDismiss={() => setSmartPrompt(null)}
+                        <div className="mb-8">
+                            <BalanceUpdater 
+                                currentCreditDebt={creditCardDebt}
+                                currentBrl={accounts?.brl || 0}
+                                currentPyg={accounts?.pyg || 0}
+                                currentSavings={accounts?.savings_nubank || 0}
+                                onUpdate={handleBalanceUpdate}
                             />
-                        )}
-                        <QuickAccess onQuickAdd={handleQuickAdd} onOpenAddModal={() => setActiveModal('add')} onOpenBillSelection={() => setActiveModal('bill-selection')} />
+                        </div>
                          <div className="grid grid-cols-1 gap-8">
                              <div className="bg-zinc-800/50 p-6 rounded-2xl shadow-lg">
                                 <h2 className="text-2xl font-bold text-white mb-4">Recent Transactions</h2>
@@ -311,44 +331,20 @@ const App: React.FC = () => {
                     onNotify={showNotification} 
                 />;
             case 'transactions':
-                return <TransactionsPage transactions={transactions} onDelete={handleDeleteTransaction} onOpenAddModal={() => setActiveModal('add')} />;
+                return <TransactionsPage 
+                    transactions={transactions} 
+                    onDelete={handleDeleteTransaction} 
+                    onOpenAddModal={() => setActiveModal('add')} 
+                    smartPrompt={smartPrompt}
+                    onAddExpenseFromPrompt={(category) => { setActiveModal('add'); setQuickAddData({ category, description: '', owedBy: undefined }); setSmartPrompt(null); }}
+                    onDismissPrompt={() => setSmartPrompt(null)}
+                    onQuickAdd={handleQuickAdd}
+                    onOpenBillSelection={() => setActiveModal('bill-selection')}
+                />;
             case 'budget':
                 return <BudgetPage monthlyIncome={monthlyIncome} monthlyTransactions={monthlyTransactions} />;
             case 'statistics':
                 return <StatisticsPage transactions={transactions} />;
-            case 'exchange':
-                if (accountsError) {
-                    return (
-                        <div className="flex flex-col items-center justify-center h-64 text-center">
-                            <div className="text-red-400 text-xl font-bold mb-2">Unable to load Exchange</div>
-                            <p className="text-zinc-400 mb-4 max-w-md">
-                                We couldn't load your account balances. This might be due to a network issue or missing database configuration.
-                            </p>
-                            <div className="bg-zinc-800 p-4 rounded-lg text-left mb-6 max-w-md w-full overflow-auto">
-                                <p className="text-xs text-zinc-500 font-mono">Error details: {accountsError}</p>
-                            </div>
-                            <button 
-                                onClick={() => window.location.reload()}
-                                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors"
-                            >
-                                Reload Page
-                            </button>
-                        </div>
-                    );
-                }
-                return accounts ? (
-                    <ExchangePage 
-                        accounts={accounts} 
-                        transactions={transactions} 
-                        onAddExchange={handleAddExchange} 
-                        onOpenEditBalancesModal={() => setActiveModal('edit-balances')} 
-                    />
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-4"></div>
-                        <p>Loading your accounts...</p>
-                    </div>
-                );
             default:
                 return null;
         }

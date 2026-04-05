@@ -15,7 +15,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate }) => {
         { page: 'statistics', label: 'Analysis', icon: <PieChartIcon className="w-6 h-6" /> },
         { page: 'budget', label: 'Budget', icon: <TargetIcon className="w-6 h-6" /> },
         { page: 'recurring', label: 'Bills', icon: <BillsIcon className="w-6 h-6" /> },
-        { page: 'exchange', label: 'Exchange', icon: <ExchangeIcon className="w-6 h-6" /> },
     ];
 
     return (

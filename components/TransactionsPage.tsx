@@ -1,15 +1,31 @@
 import React from 'react';
-import { Transaction } from '../types';
+import { Transaction, SmartPromptData, TransactionCategory } from '../types';
 import TransactionItem from './TransactionItem';
 import { PlusIcon } from './icons';
+import QuickAccess from './QuickAccess';
+import SmartPrompt from './SmartPrompt';
 
 interface TransactionsPageProps {
     transactions: Transaction[];
     onDelete: (id: string) => void;
     onOpenAddModal: () => void;
+    smartPrompt: SmartPromptData | null;
+    onAddExpenseFromPrompt: (category: TransactionCategory) => void;
+    onDismissPrompt: () => void;
+    onQuickAdd: (category: TransactionCategory, description: string, owedBy?: string) => void;
+    onOpenBillSelection: () => void;
 }
 
-const TransactionsPage: React.FC<TransactionsPageProps> = ({ transactions, onDelete, onOpenAddModal }) => {
+const TransactionsPage: React.FC<TransactionsPageProps> = ({ 
+    transactions, 
+    onDelete, 
+    onOpenAddModal,
+    smartPrompt,
+    onAddExpenseFromPrompt,
+    onDismissPrompt,
+    onQuickAdd,
+    onOpenBillSelection
+}) => {
     const nonExchangeTransactions = transactions.filter(t => t.type !== 'exchange');
     
     return (
@@ -24,6 +40,22 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({ transactions, onDel
                     Add New
                 </button>
             </header>
+
+            {smartPrompt && (
+                <SmartPrompt 
+                    prompt={smartPrompt}
+                    onAddExpense={onAddExpenseFromPrompt}
+                    onDismiss={onDismissPrompt}
+                />
+            )}
+            
+            <div className="mb-8">
+                <QuickAccess 
+                    onQuickAdd={onQuickAdd} 
+                    onOpenAddModal={onOpenAddModal} 
+                    onOpenBillSelection={onOpenBillSelection} 
+                />
+            </div>
             
             <div className="bg-zinc-800/50 p-6 rounded-2xl shadow-lg">
                 <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">

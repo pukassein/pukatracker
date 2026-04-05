@@ -1,30 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Database } from '../types';
 import { XIcon } from './icons';
 
 interface EditBalancesModalProps {
     accounts: Database['public']['Tables']['accounts']['Row'];
     onClose: () => void;
-    onSave: (newBalances: { pyg: number; brl: number }) => void;
+    onSave: (newBalances: { pyg: number; brl: number; savings_nubank: number }) => void;
 }
 
 const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, onClose, onSave }) => {
     const [pygAmount, setPygAmount] = useState(accounts.pyg.toString());
     const [brlAmount, setBrlAmount] = useState(accounts.brl.toString());
+    const [savingsNubankAmount, setSavingsNubankAmount] = useState((accounts.savings_nubank || 0).toString());
     const [error, setError] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const numericPyg = parseFloat(pygAmount);
         const numericBrl = parseFloat(brlAmount);
+        const numericSavings = parseFloat(savingsNubankAmount);
 
-        if (isNaN(numericPyg) || numericPyg < 0 || isNaN(numericBrl) || numericBrl < 0) {
-            setError('Please enter valid, non-negative amounts for both currencies.');
+        if (isNaN(numericPyg) || numericPyg < 0 || isNaN(numericBrl) || numericBrl < 0 || isNaN(numericSavings) || numericSavings < 0) {
+            setError('Please enter valid, non-negative amounts for all accounts.');
             return;
         }
 
         setError('');
-        onSave({ pyg: numericPyg, brl: numericBrl });
+        onSave({ pyg: numericPyg, brl: numericBrl, savings_nubank: numericSavings });
     };
 
     return (
@@ -58,6 +60,19 @@ const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, onClose
                             onChange={(e) => setBrlAmount(e.target.value)}
                             placeholder="R$ 0.00"
                             className="w-full bg-zinc-700 border-zinc-600 rounded-lg p-3 text-white text-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            required
+                            step="0.01"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="savings-nubank-balance" className="block text-sm font-medium text-zinc-300 mb-1">Caixinha Nu Bank Balance</label>
+                        <input
+                            id="savings-nubank-balance"
+                            type="number"
+                            value={savingsNubankAmount}
+                            onChange={(e) => setSavingsNubankAmount(e.target.value)}
+                            placeholder="R$ 0.00"
+                            className="w-full bg-zinc-700 border-zinc-600 rounded-lg p-3 text-white text-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                             required
                             step="0.01"
                         />
