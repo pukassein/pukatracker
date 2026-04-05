@@ -3,15 +3,17 @@ import { Database } from '../types';
 import { XIcon } from './icons';
 
 interface EditBalancesModalProps {
-    accounts: Database['public']['Tables']['accounts']['Row'];
+    accounts: Database['public']['Tables']['accounts']['Row'] | null;
+    monthlyBudget: number;
     onClose: () => void;
-    onSave: (newBalances: { pyg: number; brl: number; savings_nubank: number }) => void;
+    onSave: (newBalances: { pyg: number; brl: number; savings_nubank: number; monthly_budget: number }) => void;
 }
 
-const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, onClose, onSave }) => {
-    const [pygAmount, setPygAmount] = useState(accounts.pyg.toString());
-    const [brlAmount, setBrlAmount] = useState(accounts.brl.toString());
-    const [savingsNubankAmount, setSavingsNubankAmount] = useState((accounts.savings_nubank || 0).toString());
+const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, monthlyBudget, onClose, onSave }) => {
+    const [pygAmount, setPygAmount] = useState(accounts?.pyg.toString() || '0');
+    const [brlAmount, setBrlAmount] = useState(accounts?.brl.toString() || '0');
+    const [savingsNubankAmount, setSavingsNubankAmount] = useState((accounts?.savings_nubank || 0).toString());
+    const [monthlyBudgetAmount, setMonthlyBudgetAmount] = useState(monthlyBudget.toString());
     const [error, setError] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -19,14 +21,15 @@ const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, onClose
         const numericPyg = parseFloat(pygAmount);
         const numericBrl = parseFloat(brlAmount);
         const numericSavings = parseFloat(savingsNubankAmount);
+        const numericBudget = parseFloat(monthlyBudgetAmount);
 
-        if (isNaN(numericPyg) || numericPyg < 0 || isNaN(numericBrl) || numericBrl < 0 || isNaN(numericSavings) || numericSavings < 0) {
-            setError('Please enter valid, non-negative amounts for all accounts.');
+        if (isNaN(numericPyg) || numericPyg < 0 || isNaN(numericBrl) || numericBrl < 0 || isNaN(numericSavings) || numericSavings < 0 || isNaN(numericBudget) || numericBudget < 0) {
+            setError('Please enter valid, non-negative amounts for all fields.');
             return;
         }
 
         setError('');
-        onSave({ pyg: numericPyg, brl: numericBrl, savings_nubank: numericSavings });
+        onSave({ pyg: numericPyg, brl: numericBrl, savings_nubank: numericSavings, monthly_budget: numericBudget });
     };
 
     return (
@@ -73,6 +76,19 @@ const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, onClose
                             onChange={(e) => setSavingsNubankAmount(e.target.value)}
                             placeholder="R$ 0.00"
                             className="w-full bg-zinc-700 border-zinc-600 rounded-lg p-3 text-white text-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            required
+                            step="0.01"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="monthly-budget" className="block text-sm font-medium text-zinc-300 mb-1">Monthly Budget Target</label>
+                        <input
+                            id="monthly-budget"
+                            type="number"
+                            value={monthlyBudgetAmount}
+                            onChange={(e) => setMonthlyBudgetAmount(e.target.value)}
+                            placeholder="R$ 8000.00"
+                            className="w-full bg-zinc-700 border-zinc-600 rounded-lg p-3 text-white text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             required
                             step="0.01"
                         />

@@ -35,6 +35,7 @@ const App: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [recurringPayments, setRecurringPayments] = useState<RecurringPayment[]>([]);
     const [accounts, setAccounts] = useState<Accounts | null>(null);
+    const [monthlyBudget, setMonthlyBudget] = useState<number>(0);
     const [accountsError, setAccountsError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -66,11 +67,13 @@ const App: React.FC = () => {
 
                 if (accountsData) {
                     setAccounts(accountsData as Accounts);
+                    setMonthlyBudget((accountsData as Accounts).monthly_budget || 0);
                 } else {
                     // Create default account if none exists
-                    const { data: newAccount, error: createError } = await supabase.from('accounts').insert([{ pyg: 0, brl: 0 }]).select().single();
+                    const { data: newAccount, error: createError } = await supabase.from('accounts').insert([{ pyg: 0, brl: 0, savings_nubank: 0, monthly_budget: 0 }]).select().single();
                     if (createError) throw createError;
                     setAccounts(newAccount as Accounts);
+                    setMonthlyBudget(0);
                 }
                 
             } catch (error: any) {
@@ -204,15 +207,27 @@ const App: React.FC = () => {
         }
     };
 
-    const handleUpdateBalances = async (newBalances: { pyg: number; brl: number; savings_nubank: number }) => {
-        if (!accounts) return;
-        
-        const { data, error } = await supabase
-            .from('accounts')
-            .update(newBalances)
-            .eq('id', accounts.id)
-            .select()
-            .single();
+    const handleUpdateBalances = async (newBalances: { pyg: number; brl: number; savings_nubank: number; monthly_budget: number }) => {
+        let data, error;
+
+        if (accounts && accounts.id) {
+            const response = await supabase
+                .from('accounts')
+                .update(newBalances)
+                .eq('id', accounts.id)
+                .select()
+                .single();
+            data = response.data;
+            error = response.error;
+        } else {
+            const response = await supabase
+                .from('accounts')
+                .insert([newBalances])
+                .select()
+                .single();
+            data = response.data;
+            error = response.error;
+        }
 
         if (error) {
             console.error('Error updating balances:', error);
@@ -221,6 +236,8 @@ const App: React.FC = () => {
         }
 
         setAccounts(data as Accounts);
+        setMonthlyBudget(newBalances.monthly_budget);
+        
         showNotification({ message: 'Balances updated successfully!', type: 'success' });
         setActiveModal(null);
     };
@@ -342,7 +359,7 @@ const App: React.FC = () => {
                     onOpenBillSelection={() => setActiveModal('bill-selection')}
                 />;
             case 'budget':
-                return <BudgetPage monthlyIncome={monthlyIncome} monthlyTransactions={monthlyTransactions} />;
+                return <BudgetPage monthlyBudget={monthlyBudget} monthlyTransactions={monthlyTransactions} />;
             case 'statistics':
                 return <StatisticsPage transactions={transactions} />;
             default:
@@ -361,6 +378,7 @@ const App: React.FC = () => {
                     onCalculatorToggle={() => setCalculatorOpen(prev => !prev)} 
                     isDashboardExpanded={isDashboardExpanded}
                     onDashboardToggle={handleDashboardToggle}
+                    onEditBalances={() => setActiveModal('edit-balances')}
                 />
                 <Navigation currentPage={currentPage} onNavigate={(page) => setCurrentPage(page)} />
                 <main className="pb-24 md:pb-0">
@@ -371,7 +389,7 @@ const App: React.FC = () => {
             {activeModal === 'add' && <AddTransactionForm onClose={() => setActiveModal(null)} onAddTransaction={handleAddTransaction} prefillCategory={quickAddData?.category} />}
             {activeModal === 'quick-add' && quickAddData && <QuickAddForm onClose={() => { setActiveModal(null); setQuickAddData(null); }} onAddTransaction={handleAddTransaction} {...quickAddData} />}
             {activeModal === 'bill-selection' && <BillSelectionModal onClose={() => setActiveModal(null)} onSelect={handleSelectBill} />}
-            {activeModal === 'edit-balances' && accounts && <EditBalancesModal accounts={accounts} onClose={() => setActiveModal(null)} onSave={handleUpdateBalances} />}
+            {activeModal === 'edit-balances' && <EditBalancesModal accounts={accounts} monthlyBudget={monthlyBudget} onClose={() => setActiveModal(null)} onSave={handleUpdateBalances} />}
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
         </div>
     );

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Transaction, TransactionCategory } from '../types';
 import {
@@ -23,7 +24,9 @@ interface StatisticsPageProps {
 }
 
 // Map categories to icons and colors for consistency
-const categoryDetails: Record<string, { icon: React.ReactNode; color: string }> = {
+// FIX: Changed the type of 'icon' from React.ReactNode to React.ReactElement.
+// This is because React.cloneElement expects a ReactElement, and ReactNode is a broader type that can include non-element types like strings, causing a type error.
+const categoryDetails: Record<string, { icon: React.ReactElement; color: string }> = {
     [TransactionCategory.Food]: { icon: <FoodIcon />, color: '#34D399' }, // emerald-400
     [TransactionCategory.Transport]: { icon: <TransportIcon />, color: '#60A5FA' }, // blue-400
     [TransactionCategory.Shopping]: { icon: <ShoppingIcon />, color: '#F472B6' }, // pink-400
@@ -47,10 +50,9 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ transactions }) => {
 
     const filteredTransactions = useMemo(() => {
         if (!startDate || !endDate) return [];
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0); // Start of the day
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999); // End of the day
+        // Parse dates in local time to avoid UTC offset bugs
+        const start = new Date(startDate + 'T00:00:00');
+        const end = new Date(endDate + 'T23:59:59.999');
 
         return transactions.filter(t => {
             const txDate = new Date(t.date);
@@ -59,7 +61,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ transactions }) => {
     }, [transactions, startDate, endDate]);
 
     const { totalExpenses, totalIncome, categoryData } = useMemo(() => {
-        const expenses = filteredTransactions.filter(t => t.type === 'expense');
+        const expenses = filteredTransactions.filter(t => t.type === 'expense' && t.category !== TransactionCategory.CreditCard);
         const income = filteredTransactions.filter(t => t.type === 'income');
 
         const totalExpenses = expenses.reduce((sum, t) => sum + (t.amount ?? 0), 0);
@@ -114,9 +116,9 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ transactions }) => {
 
             {/* Summary Cards */}
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <DashboardCard title="Total Expenses" amount={totalExpenses} icon={<CreditCardIcon />} color="text-rose-400" currency="USD" />
-                <DashboardCard title="Total Income" amount={totalIncome} icon={<DollarSignIcon />} color="text-cyan-400" currency="USD" />
-                <DashboardCard title="Net Flow" amount={totalIncome - totalExpenses} icon={<DollarSignIcon />} color={totalIncome >= totalExpenses ? "text-green-400" : "text-rose-400"} currency="USD" />
+                <DashboardCard title="Total Expenses" amount={totalExpenses} icon={<CreditCardIcon />} color="text-rose-400" currency="BRL" />
+                <DashboardCard title="Total Income" amount={totalIncome} icon={<DollarSignIcon />} color="text-cyan-400" currency="BRL" />
+                <DashboardCard title="Net Flow" amount={totalIncome - totalExpenses} icon={<DollarSignIcon />} color={totalIncome >= totalExpenses ? "text-green-400" : "text-rose-400"} currency="BRL" />
             </div>
 
             {/* Chart and Category List */}
@@ -138,7 +140,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ transactions }) => {
                                             <span className="font-semibold text-zinc-200">{cat.name}</span>
                                         </div>
                                         <span className="font-semibold text-white">
-                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cat.value)}
+                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BRL' }).format(cat.value)}
                                         </span>
                                     </div>
                                     <div className="w-full bg-zinc-700 rounded-full h-2">

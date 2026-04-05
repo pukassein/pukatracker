@@ -9,17 +9,20 @@ export interface Database {
           pyg: number;
           brl: number;
           savings_nubank: number;
+          monthly_budget: number;
         };
         Insert: {
           id?: string;
           pyg: number;
           brl: number;
           savings_nubank?: number;
+          monthly_budget?: number;
         };
         Update: {
           pyg?: number;
           brl?: number;
           savings_nubank?: number;
+          monthly_budget?: number;
         };
       };
       recurring_payments: {
