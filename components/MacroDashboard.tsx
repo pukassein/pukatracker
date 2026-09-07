@@ -19,7 +19,13 @@ const MacroDashboard: React.FC<Props> = ({ accounts, recurringPayments, onEdit, 
       <button onClick={onEdit} className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-3 rounded-xl">Update balances</button>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <DashboardCard title="Nubank" amount={brl} icon={<WalletIcon />} color="text-purple-400" currency="BRL" />
+      <div className="space-y-3">
+        <DashboardCard title="Nubank" amount={brl} icon={<WalletIcon />} color="text-purple-400" currency="BRL" />
+        <div className="bg-zinc-800/60 p-4 rounded-2xl shadow-lg flex items-center justify-between">
+          <div><p className="text-zinc-400 text-sm font-medium mb-1">Caixinha Nubank</p><p className="text-2xl font-bold text-fuchsia-300">{money(accounts?.savings_nubank || 0, 'BRL')}</p></div>
+          <div className="bg-zinc-700 p-2 rounded-full"><WalletIcon className="w-5 h-5" /></div>
+        </div>
+      </div>
       <DashboardCard title="Paraguay Bank 1" amount={pygOne} icon={<BankIcon />} color="text-cyan-400" currency="PYG" />
       <DashboardCard title="Paraguay Bank 2" amount={pygTwo} icon={<BankIcon />} color="text-blue-400" currency="PYG" />
       <DashboardCard title="Nubank Card Debt" amount={card} icon={<CreditCardIcon />} color="text-rose-400" currency="BRL" />
