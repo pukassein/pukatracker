@@ -16,6 +16,7 @@ import BillSelectionModal from './components/BillSelectionModal';
 import EditBalancesModal from './components/EditBalancesModal';
 import BalanceUpdater from './components/BalanceUpdater';
 import MacroDashboard from './components/MacroDashboard';
+import NubankExpensesModal from './components/NubankExpensesModal';
 
 // Pages
 import RecurringPaymentsPage from './components/RecurringPaymentsPage';
@@ -46,6 +47,7 @@ const App: React.FC = () => {
     const [smartPrompt, setSmartPrompt] = useState<SmartPromptData | null>(null);
     const [quickAddData, setQuickAddData] = useState<{ category: TransactionCategory, description: string, owedBy?: string } | null>(null);
     const [notification, setNotification] = useState<NotificationType | null>(null);
+    const [isNubankExpensesOpen, setNubankExpensesOpen] = useState(false);
 
     // Data Fetching
     useEffect(() => {
@@ -312,7 +314,7 @@ const App: React.FC = () => {
             case 'dashboard':
                 return (
                     <>
-                        <MacroDashboard accounts={accounts} recurringPayments={recurringPayments} onEdit={() => setActiveModal('edit-balances')} onInstallments={() => setCurrentPage('recurring')} />
+                        <MacroDashboard accounts={accounts} recurringPayments={recurringPayments} onEdit={() => setActiveModal('edit-balances')} onInstallments={() => setCurrentPage('recurring')} onNubankExpenses={() => setNubankExpensesOpen(true)} />
                         {false && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-8 animate-fade-in-down">
                                 <DashboardCard title="Cash Balance" amount={totalBalance} icon={<WalletIcon />} color="text-green-400" currency="USD" />
@@ -393,6 +395,7 @@ const App: React.FC = () => {
             {activeModal === 'bill-selection' && <BillSelectionModal onClose={() => setActiveModal(null)} onSelect={handleSelectBill} />}
             {activeModal === 'edit-balances' && <EditBalancesModal accounts={accounts} monthlyBudget={monthlyBudget} onClose={() => setActiveModal(null)} onSave={handleUpdateBalances} />}
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+            {isNubankExpensesOpen && <NubankExpensesModal recurringPayments={recurringPayments} onClose={() => setNubankExpensesOpen(false)} />}
         </div>
     );
 };

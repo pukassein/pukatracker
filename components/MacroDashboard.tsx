@@ -3,11 +3,11 @@ import DashboardCard from './DashboardCard';
 import { Accounts, RecurringPayment } from '../types';
 import { BankIcon, CreditCardIcon, WalletIcon, BillsIcon } from './icons';
 
-interface Props { accounts: Accounts | null; recurringPayments: RecurringPayment[]; onEdit: () => void; onInstallments: () => void; }
+interface Props { accounts: Accounts | null; recurringPayments: RecurringPayment[]; onEdit: () => void; onInstallments: () => void; onNubankExpenses: () => void; }
 
 const money = (n: number, currency: 'BRL' | 'PYG') => new Intl.NumberFormat(currency === 'PYG' ? 'es-PY' : 'pt-BR', { style: 'currency', currency, maximumFractionDigits: currency === 'PYG' ? 0 : 2 }).format(n);
 
-const MacroDashboard: React.FC<Props> = ({ accounts, recurringPayments, onEdit, onInstallments }) => {
+const MacroDashboard: React.FC<Props> = ({ accounts, recurringPayments, onEdit, onInstallments, onNubankExpenses }) => {
   const [nubankExpanded, setNubankExpanded] = useState(false);
   const brl = accounts?.brl || 0;
   const caixinha = accounts?.savings_nubank || 0;
@@ -29,6 +29,7 @@ const MacroDashboard: React.FC<Props> = ({ accounts, recurringPayments, onEdit, 
           <div><p className="text-zinc-400 text-sm font-medium mb-1">Caixinha Nubank</p><p className="text-2xl font-bold text-fuchsia-300">{money(caixinha, 'BRL')}</p></div>
           <div className="bg-zinc-700 p-2 rounded-full"><WalletIcon className="w-5 h-5" /></div>
         </div>}
+        <button onClick={onNubankExpenses} className="w-full text-sm font-semibold text-emerald-400 hover:text-emerald-300 text-left px-2">Edit Nubank expenses →</button>
       </div>
       <DashboardCard title="Ueno" amount={pygOne} icon={<BankIcon />} color="text-cyan-400" currency="PYG" />
       <DashboardCard title="BNF" amount={pygTwo} icon={<BankIcon />} color="text-blue-400" currency="PYG" />
