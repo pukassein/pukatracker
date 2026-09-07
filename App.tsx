@@ -175,6 +175,23 @@ const App: React.FC = () => {
             return;
         }
         setTransactions(prev => [data[0] as unknown as Transaction, ...prev]);
+
+        // Income entered through the main form is money received into Nubank (BRL).
+        if (transaction.type === 'income' && accounts) {
+            const newBrlBalance = (accounts.brl || 0) + (transaction.amount || 0);
+            const { data: updatedAccount, error: accountError } = await supabase
+                .from('accounts')
+                .update({ brl: newBrlBalance })
+                .eq('id', accounts.id)
+                .select()
+                .single();
+            if (accountError) {
+                console.error('Income was saved, but Nubank balance update failed:', accountError);
+                showNotification({ message: `Income saved, but Nubank was not updated: ${accountError.message}`, type: 'error' });
+                return;
+            }
+            setAccounts(updatedAccount as Accounts);
+        }
         showNotification({ message: 'Transaction added!', type: 'success' });
         setActiveModal(null);
         setQuickAddData(null);

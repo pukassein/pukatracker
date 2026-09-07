@@ -50,6 +50,8 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ onClose, onAddT
             amount: numericAmount,
             description,
             category: type === 'income' ? TransactionCategory.Income : category,
+            // Income entered here is deposited into the Nubank BRL account.
+            paymentMethod: type === 'income' ? 'brl_account' : undefined,
         };
 
         if (type === 'expense') {
