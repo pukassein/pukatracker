@@ -232,7 +232,7 @@ const App: React.FC = () => {
 
         if (error) {
             console.error('Error updating balances:', error);
-            showNotification({ message: 'Failed to update balances.', type: 'error' });
+            showNotification({ message: `Failed to update balances: ${error.message || 'Database update failed.'}`, type: 'error' });
             return;
         }
 
