@@ -15,6 +15,7 @@ import Notification from './components/Notification';
 import BillSelectionModal from './components/BillSelectionModal';
 import EditBalancesModal from './components/EditBalancesModal';
 import BalanceUpdater from './components/BalanceUpdater';
+import MacroDashboard from './components/MacroDashboard';
 
 // Pages
 import RecurringPaymentsPage from './components/RecurringPaymentsPage';
@@ -70,7 +71,7 @@ const App: React.FC = () => {
                     setMonthlyBudget((accountsData as Accounts).monthly_budget || 0);
                 } else {
                     // Create default account if none exists
-                    const { data: newAccount, error: createError } = await supabase.from('accounts').insert([{ pyg: 0, brl: 0, savings_nubank: 0, monthly_budget: 0 }]).select().single();
+                    const { data: newAccount, error: createError } = await supabase.from('accounts').insert([{ pyg: 0, pyg_bank_2: 0, brl: 0, savings_nubank: 0, credit_card_balance: 0, monthly_budget: 0 }]).select().single();
                     if (createError) throw createError;
                     setAccounts(newAccount as Accounts);
                     setMonthlyBudget(0);
@@ -207,7 +208,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handleUpdateBalances = async (newBalances: { pyg: number; brl: number; savings_nubank: number; monthly_budget: number }) => {
+    const handleUpdateBalances = async (newBalances: { pyg: number; pyg_bank_2: number; brl: number; savings_nubank: number; credit_card_balance: number; monthly_budget: number }) => {
         let data, error;
 
         if (accounts && accounts.id) {
@@ -311,7 +312,8 @@ const App: React.FC = () => {
             case 'dashboard':
                 return (
                     <>
-                        {isDashboardExpanded && (
+                        <MacroDashboard accounts={accounts} recurringPayments={recurringPayments} onEdit={() => setActiveModal('edit-balances')} onInstallments={() => setCurrentPage('recurring')} />
+                        {false && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-8 animate-fade-in-down">
                                 <DashboardCard title="Cash Balance" amount={totalBalance} icon={<WalletIcon />} color="text-green-400" currency="USD" />
                                 <DashboardCard title="Monthly Income" amount={monthlyIncome} icon={<DollarSignIcon />} color="text-cyan-400" currency="USD" />
@@ -320,7 +322,7 @@ const App: React.FC = () => {
                                 <DashboardCard title="Caixinha Nu Bank" amount={accounts?.savings_nubank || 0} icon={<WalletIcon />} color="text-purple-400" currency="BRL" />
                             </div>
                         )}
-                        <div className="mb-8">
+                        {false && <div className="mb-8">
                             <BalanceUpdater 
                                 currentCreditDebt={creditCardDebt}
                                 currentBrl={accounts?.brl || 0}
@@ -328,8 +330,8 @@ const App: React.FC = () => {
                                 currentSavings={accounts?.savings_nubank || 0}
                                 onUpdate={handleBalanceUpdate}
                             />
-                        </div>
-                         <div className="grid grid-cols-1 gap-8">
+                        </div>}
+                         {false && <div className="grid grid-cols-1 gap-8">
                              <div className="bg-zinc-800/50 p-6 rounded-2xl shadow-lg">
                                 <h2 className="text-2xl font-bold text-white mb-4">Recent Transactions</h2>
                                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
@@ -338,7 +340,7 @@ const App: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
-                        </div>
+                        </div>}
                     </>
                 );
             case 'recurring':

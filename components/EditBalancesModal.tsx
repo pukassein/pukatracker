@@ -6,7 +6,7 @@ interface EditBalancesModalProps {
     accounts: Database['public']['Tables']['accounts']['Row'] | null;
     monthlyBudget: number;
     onClose: () => void;
-    onSave: (newBalances: { pyg: number; brl: number; savings_nubank: number; monthly_budget: number }) => void;
+    onSave: (newBalances: { pyg: number; pyg_bank_2: number; brl: number; savings_nubank: number; credit_card_balance: number; monthly_budget: number }) => void;
 }
 
 const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, monthlyBudget, onClose, onSave }) => {
@@ -14,6 +14,8 @@ const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, monthly
     const [brlAmount, setBrlAmount] = useState(accounts?.brl.toString() || '0');
     const [savingsNubankAmount, setSavingsNubankAmount] = useState((accounts?.savings_nubank || 0).toString());
     const [monthlyBudgetAmount, setMonthlyBudgetAmount] = useState(monthlyBudget.toString());
+    const [pygTwoAmount, setPygTwoAmount] = useState((accounts?.pyg_bank_2 || 0).toString());
+    const [creditAmount, setCreditAmount] = useState((accounts?.credit_card_balance || 0).toString());
     const [error, setError] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -22,14 +24,16 @@ const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, monthly
         const numericBrl = parseFloat(brlAmount);
         const numericSavings = parseFloat(savingsNubankAmount);
         const numericBudget = parseFloat(monthlyBudgetAmount);
+        const numericPygTwo = parseFloat(pygTwoAmount);
+        const numericCredit = parseFloat(creditAmount);
 
-        if (isNaN(numericPyg) || numericPyg < 0 || isNaN(numericBrl) || numericBrl < 0 || isNaN(numericSavings) || numericSavings < 0 || isNaN(numericBudget) || numericBudget < 0) {
+        if ([numericPyg, numericPygTwo, numericBrl, numericSavings, numericCredit, numericBudget].some(n => isNaN(n) || n < 0)) {
             setError('Please enter valid, non-negative amounts for all fields.');
             return;
         }
 
         setError('');
-        onSave({ pyg: numericPyg, brl: numericBrl, savings_nubank: numericSavings, monthly_budget: numericBudget });
+        onSave({ pyg: numericPyg, pyg_bank_2: numericPygTwo, brl: numericBrl, savings_nubank: numericSavings, credit_card_balance: numericCredit, monthly_budget: numericBudget });
     };
 
     return (
@@ -41,6 +45,14 @@ const EditBalancesModal: React.FC<EditBalancesModalProps> = ({ accounts, monthly
                 <h2 className="text-2xl font-bold mb-6 text-white text-center">Edit Account Balances</h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label htmlFor="pyg-bank-2" className="block text-sm font-medium text-zinc-300 mb-1">Paraguay Bank 2 (PYG)</label>
+                        <input id="pyg-bank-2" type="number" value={pygTwoAmount} onChange={e => setPygTwoAmount(e.target.value)} className="w-full bg-zinc-700 rounded-lg p-3 text-white text-lg" required step="1" />
+                    </div>
+                    <div>
+                        <label htmlFor="credit-card-balance" className="block text-sm font-medium text-zinc-300 mb-1">Nubank Credit Card Debt (BRL)</label>
+                        <input id="credit-card-balance" type="number" value={creditAmount} onChange={e => setCreditAmount(e.target.value)} className="w-full bg-zinc-700 rounded-lg p-3 text-white text-lg" required step="0.01" />
+                    </div>
                     <div>
                         <label htmlFor="pyg-balance" className="block text-sm font-medium text-zinc-300 mb-1">PYG Bank Account Balance</label>
                         <input
