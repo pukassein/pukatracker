@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardCard from './DashboardCard';
 import { Accounts, RecurringPayment } from '../types';
 import { BankIcon, CreditCardIcon, WalletIcon, BillsIcon } from './icons';
@@ -8,7 +8,9 @@ interface Props { accounts: Accounts | null; recurringPayments: RecurringPayment
 const money = (n: number, currency: 'BRL' | 'PYG') => new Intl.NumberFormat(currency === 'PYG' ? 'es-PY' : 'pt-BR', { style: 'currency', currency, maximumFractionDigits: currency === 'PYG' ? 0 : 2 }).format(n);
 
 const MacroDashboard: React.FC<Props> = ({ accounts, recurringPayments, onEdit, onInstallments }) => {
+  const [nubankExpanded, setNubankExpanded] = useState(false);
   const brl = accounts?.brl || 0;
+  const caixinha = accounts?.savings_nubank || 0;
   const pygOne = accounts?.pyg || 0;
   const pygTwo = accounts?.pyg_bank_2 || 0;
   const card = accounts?.credit_card_balance || 0;
@@ -20,14 +22,16 @@ const MacroDashboard: React.FC<Props> = ({ accounts, recurringPayments, onEdit, 
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div className="space-y-3">
-        <DashboardCard title="Nubank" amount={brl} icon={<WalletIcon />} color="text-purple-400" currency="BRL" />
-        <div className="bg-zinc-800/60 p-4 rounded-2xl shadow-lg flex items-center justify-between">
-          <div><p className="text-zinc-400 text-sm font-medium mb-1">Caixinha Nubank</p><p className="text-2xl font-bold text-fuchsia-300">{money(accounts?.savings_nubank || 0, 'BRL')}</p></div>
+        <button onClick={() => setNubankExpanded(value => !value)} className="w-full text-left focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-2xl" aria-expanded={nubankExpanded}>
+          <DashboardCard title={nubankExpanded ? 'Nubank Account' : 'Nubank Total'} amount={nubankExpanded ? brl : brl + caixinha} icon={<WalletIcon />} color="text-purple-400" currency="BRL" />
+        </button>
+        {nubankExpanded && <div className="bg-zinc-800/60 p-4 rounded-2xl shadow-lg flex items-center justify-between">
+          <div><p className="text-zinc-400 text-sm font-medium mb-1">Caixinha Nubank</p><p className="text-2xl font-bold text-fuchsia-300">{money(caixinha, 'BRL')}</p></div>
           <div className="bg-zinc-700 p-2 rounded-full"><WalletIcon className="w-5 h-5" /></div>
-        </div>
+        </div>}
       </div>
-      <DashboardCard title="Paraguay Bank 1" amount={pygOne} icon={<BankIcon />} color="text-cyan-400" currency="PYG" />
-      <DashboardCard title="Paraguay Bank 2" amount={pygTwo} icon={<BankIcon />} color="text-blue-400" currency="PYG" />
+      <DashboardCard title="Ueno" amount={pygOne} icon={<BankIcon />} color="text-cyan-400" currency="PYG" />
+      <DashboardCard title="BNF" amount={pygTwo} icon={<BankIcon />} color="text-blue-400" currency="PYG" />
       <DashboardCard title="Nubank Card Debt" amount={card} icon={<CreditCardIcon />} color="text-rose-400" currency="BRL" />
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
